@@ -1,92 +1,107 @@
-# ai-hire-project-bedrock
+# Bedrock
 
+公司级规范示例项目 — 所有子服务的规范源头、学习入口和设计语言参考。
 
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+## 项目结构
 
 ```
-cd existing_repo
-git remote add origin http://git.100credit.cn/silicon-based/jobs/ai-hire-project-bedrock.git
-git branch -M main
-git push -uf origin main
+bedrock/
+├── apps/
+│   ├── backend/                # FastAPI Python 后端 (8000)
+│   │   └── src/backend/
+│   │       ├── main.py         # 启动 + 路由注册
+│   │       ├── container.py    # DI 容器
+│   │       ├── common/         # 通用工具（error_handler / pagination / response）
+│   │       └── domain/         # 业务域
+│   │           ├── api/        # API 端点
+│   │           ├── model/      # ORM 模型
+│   │           ├── repository/ # 数据访问
+│   │           ├── schema/     # Pydantic Schema
+│   │           └── service/    # 业务逻辑
+│   └── frontend/               # React TypeScript 前端 (5173)
+│       └── src/
+│           ├── app/            # layouts / providers / routes
+│           ├── features/       # 按业务划分（user/ 为示例）
+│           ├── shared/         # hooks / lib / types
+│           └── styles/         # 设计 token
+├── packages/
+│   ├── core/                   # 共享基础设施（13 模块）
+│   ├── llm/                    # LLM 能力封装
+│   └── knowledge/              # 知识库
+├── docs/                       # 技术文档（VitePress）
+└── .claude/                    # Claude Code 规范体系
 ```
 
-## Integrate with your tools
+## 技术栈
 
-- [ ] [Set up project integrations](http://git.100credit.cn/silicon-based/jobs/ai-hire-project-bedrock/-/settings/integrations)
+| 层 | 技术 |
+|----|------|
+| 后端 | Python 3.13+, FastAPI, SQLAlchemy 2.0 (async), dependency-injector, Alembic |
+| 前端 | React 19, TypeScript 5.9, Vite, Tailwind CSS 4.x, shadcn/ui, TanStack Query |
+| 数据库 | PostgreSQL (多租户 Schema 隔离), Redis, pgvector |
+| 存储 | MinIO (S3 兼容) |
+| AI | LangChain, LangGraph, 多供应商 LLM (OpenAI / DashScope / Ollama) |
+| 工具链 | pnpm (前端), uv (Python), Ruff, Pyright, ESLint |
 
-## Collaborate with your team
+## 快速启动
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```bash
+# 后端
+cd apps/backend && python -m uvicorn backend.main:app --reload --port 8000
 
-## Test and Deploy
+# 前端
+pnpm --filter @bedrock/frontend dev
 
-Use the built-in continuous integration in GitLab.
+# 全栈
+pnpm dev
+```
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+## 后端架构
 
-***
+三层分层：**API → Service → Repository**
 
-# Editing this README
+- **API**: `@inject` + `Depends(Provide["..."])` 注入 Service；`Depends(db_session)` 获取 Session
+- **Service**: 构造器注入依赖；首参 `session: AsyncSession`；写操作调用 `flush()`
+- **Repository**: Singleton 无状态；显式接收 `session`；不创建 Session、不 commit
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## 前端架构
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+- `features/` 按业务组织（components / hooks / api / types）
+- `shared/` 全局共享（hooks / lib / types）
+- `styles/` 设计系统（CSS 变量 / 设计 token）
 
-## Name
-Choose a self-explaining name for your project.
+## 技术文档
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+项目使用 [VitePress](https://vitepress.dev/) 构建技术文档站点，覆盖后端架构、前端开发、共享包、Claude Code 规范等内容。
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### 启动文档站点
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```bash
+pnpm --filter docs dev
+```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+访问 `http://localhost:5173` 查看文档。
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### 文档预览
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+**首页** — 项目总览与快速导航：
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+![VitePress 首页](docs/public/screenshots/vitepress-home.png)
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+**文档页** — 左侧导航 + 右侧目录 + 全文搜索：
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+![VitePress 文档页](docs/public/screenshots/vitepress-docs.png)
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### 文档目录
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+| 分类 | 文档 | 说明 |
+|------|------|------|
+| 后端 | [后端架构与开发规范](docs/backend/architecture.md) | 三层分层、DI、Session 策略 |
+| 后端 | [依赖注入架构指南](docs/backend/dependency-injection.md) | AppContainer 设计与陷阱 |
+| 前端 | [前端开发指南](docs/frontend/development.md) | 技术栈、组件规范、API 模式 |
+| 共享包 | [Core 基础设施](docs/packages/core.md) | 13 个基础模块总览 |
+| 共享包 | [LLM 能力封装](docs/packages/llm.md) | 多供应商路由、向量检索 |
+| 共享包 | [Knowledge 知识库](docs/packages/knowledge.md) | 领域模型、异常体系 |
+| Claude Code | [项目配置架构解析](docs/claude/architecture.md) | Rules / Skills / Hooks / Settings |
+| Claude Code | [速查手册](docs/claude/cheatsheet.md) | 日常开发快速查阅 |
+| Claude Code | [进阶定制指南](docs/claude/customization.md) | 新增 Rule / Skill / Hook 方法 |
