@@ -1,0 +1,21 @@
+{
+  "name": "bedrock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Company-level reference implementation project",
+  "scripts": {
+    "dev": "pnpm --parallel --filter './apps/*' dev",
+    "dev:backend": "cd apps/backend && python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "pnpm --filter @bedrock/frontend dev",
+    "lint": "pnpm --parallel --filter './apps/*' lint",
+    "lint:backend": "cd apps/backend && ruff format src/ && ruff check --fix src/ && pyright src/",
+    "lint:frontend": "pnpm --filter @bedrock/frontend lint",
+    "test": "cd apps/backend && pytest",
+    "dev:docs": "pnpm --filter docs dev",
+    "build": "pnpm --filter @bedrock/frontend build"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

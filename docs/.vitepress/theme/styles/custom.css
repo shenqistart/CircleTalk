@@ -1,0 +1,71 @@
+/* 全局样式优化 */
+:root {
+  --vp-c-brand-1: #646cff;
+  --vp-c-brand-2: #747bff;
+  --vp-c-brand-3: #8b93ff;
+  --vp-font-family-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+}
+
+/* 代码块字体优化 */
+.vp-doc [class*='language-'] code {
+  font-size: 0.875rem;
+  font-family: var(--vp-font-family-mono);
+}
+
+/* 表格美化 */
+.vp-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.vp-doc th {
+  background: var(--vp-c-bg-soft);
+  font-weight: 600;
+  text-align: left;
+}
+
+.vp-doc td,
+.vp-doc th {
+  border: 1px solid var(--vp-c-divider);
+  padding: 0.625rem 1rem;
+}
+
+.vp-doc tr:hover td {
+  background: var(--vp-c-bg-soft);
+}
+
+/* 内联代码样式 */
+.vp-doc :not(pre) > code {
+  font-size: 0.875em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+/* 标题锚点优化 */
+.vp-doc h2,
+.vp-doc h3,
+.vp-doc h4 {
+  scroll-margin-top: 4rem;
+}
+
+/* 侧边栏样式优化 */
+.VPSidebar .VPSidebarItem.level-0 > .item > .text {
+  font-weight: 600;
+}
+
+/* 搜索框样式 */
+.VPLocalSearchBox .shell {
+  border-radius: 12px;
+}
+
+/* 首页卡片样式（如果需要） */
+.VPFeature {
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.VPFeature:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}

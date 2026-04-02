@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(pnpm:*)",
+      "Bash(python:*)",
+      "Bash(pip:*)",
+      "Bash(uv:*)",
+      "Bash(ruff:*)",
+      "Bash(pyright:*)",
+      "Bash(pytest:*)",
+      "Bash(alembic:*)",
+      "Bash(git:*)",
+      "Bash(docker:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(cat:*)",
+      "Bash(echo:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "WebFetch"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": ".claude/hooks/code-guard.sh \"$TOOL_INPUT\"",
+        "timeout": 30000
+      }
+    ]
+  },
+  "enabledPlugins": [
+    "code-review",
+    "code-simplifier"
+  ],
+  "language": "zh-CN"
+}
