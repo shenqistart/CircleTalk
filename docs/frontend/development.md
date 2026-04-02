@@ -12,6 +12,30 @@
 - **lucide-react** 图标
 - **framer-motion** 动画
 
+## 构建工具选型
+
+### 当前选择：Vite
+
+B 端管理后台使用 Vite + React SPA 架构，原因：
+
+- 后端已有独立的 FastAPI 服务，Next.js 全栈能力（API Routes / Server Actions / RSC 直连数据库）无法发挥
+- 登录后使用的 B 端系统无 SEO 需求，SSR 收益极小
+- Vite 开发体验更优：冷启动 ~300ms，插件生态 800+，Vite 8 已切换 Rolldown (Rust) 引擎
+
+### 何时引入 Next.js
+
+当出现以下场景时，在 monorepo 中新增 Next.js 应用（如 `apps/portal/`），与现有 Vite 应用共存：
+
+| 场景 | 收益 |
+|------|------|
+| C 端招聘门户 / 官网 | SSR 首屏 + SEO + `next/image` 响应式优化 |
+| 移动端弱网访问的公开页面 | Streaming SSR + 渐进渲染，TTFB/FCP/LCP 显著优于 CSR |
+| 全栈一体的轻量独立应用 | API Routes + RSC 减少前后端协调成本 |
+
+### 共享组件库
+
+跨应用共享的 UI 组件使用 Vite Library Mode 打包，放在 `packages/ui/`，B 端和 C 端应用均可引用。
+
 ## 项目结构
 
 ```
