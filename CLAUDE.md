@@ -18,12 +18,18 @@ bedrock/
 │   │           ├── repository/ # 数据访问
 │   │           ├── schema/     # Pydantic Schema
 │   │           └── service/    # 业务逻辑
-│   └── frontend/               # React TypeScript 前端 (5173)
+│   ├── frontend/               # React TypeScript 前端 (5173)
+│   │   └── src/
+│   │       ├── app/            # layouts / providers / routes
+│   │       ├── features/       # 按业务划分（user/ 为示例）
+│   │       ├── shared/         # hooks / lib / types
+│   │       └── styles/         # 设计 token
+│   └── desktop/                # Electron 桌面端
 │       └── src/
-│           ├── app/            # layouts / providers / routes
-│           ├── features/       # 按业务划分（user/ 为示例）
-│           ├── shared/         # hooks / lib / types
-│           └── styles/         # 设计 token
+│           ├── main/           # 主进程（窗口管理 / 系统 API / IPC）
+│           ├── preload/        # 预加载脚本（contextBridge 桥接）
+│           ├── renderer/       # 渲染进程（React UI，同 frontend 结构）
+│           └── shared/         # 跨进程共享类型
 ├── packages/
 │   ├── core/                   # 共享基础设施
 │   │   # database / repository / cache / config / context / storage
@@ -79,12 +85,14 @@ pnpm dev
 | `backend/python.md` | Python 规则 | 条件（编辑后端文件时） |
 | `backend/conventions.md` | 结构约定 | 条件 |
 | `frontend/react.md` | React 规则 | 条件（编辑前端文件时） |
+| `frontend/electron.md` | Electron 规则 | 条件（编辑桌面端文件时） |
 
 ## 文档
 
 - 后端架构：@docs/backend/architecture.md
 - 依赖注入：@docs/backend/dependency-injection.md
 - 前端开发：@docs/frontend/development.md
+- Electron 桌面端：@docs/frontend/electron.md
 - Core 基础设施：docs/packages/core.md
 - LLM 能力封装：docs/packages/llm.md
 - Knowledge 知识库：docs/packages/knowledge.md

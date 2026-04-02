@@ -25,6 +25,7 @@ export const sidebar = [
     collapsed: false,
     items: [
       { text: '前端开发指南', link: '/frontend/development' },
+      { text: 'Electron 桌面端开发指南', link: '/frontend/electron' },
     ],
   },
   {
