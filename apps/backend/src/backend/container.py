@@ -2,8 +2,8 @@
 
 from dependency_injector import containers, providers
 
-from backend.domain.user.repository.user_repository import UserRepository
-from backend.domain.user.service.user_service import UserService
+from backend.domain.repository.user_repository import UserRepository
+from backend.domain.service.user_service import UserService
 
 
 class AppContainer(containers.DeclarativeContainer):

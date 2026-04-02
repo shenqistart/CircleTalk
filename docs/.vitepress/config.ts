@@ -38,6 +38,7 @@ export default defineConfig({
       { text: 'Claude Code', link: '/claude/architecture' },
       { text: '后端', link: '/backend/architecture' },
       { text: '前端', link: '/frontend/development' },
+      { text: '共享包', link: '/packages/core' },
       { text: 'Superpowers', link: '/superpowers/specs/2026-04-01-bedrock-design' },
     ],
   },

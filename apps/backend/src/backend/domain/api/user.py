@@ -2,6 +2,7 @@
 
 from typing import Annotated, Any
 
+from core.database.session import db_session
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,9 +15,8 @@ from backend.common.response import (
     pageable_success_response,
     success_response,
 )
-from backend.domain.user.schema.user_schema import UserCreate, UserUpdate
-from backend.domain.user.service.user_service import UserService
-from core.database.session import db_session
+from backend.domain.schema.user_schema import UserCreate, UserUpdate
+from backend.domain.service.user_service import UserService
 
 router = APIRouter(prefix="/users", tags=["用户管理"])
 

@@ -7,8 +7,8 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from backend.container import AppContainer
-from backend.domain.user.api import user_router
-from backend.domain.user.schema.user_schema import UserSchema
+from backend.domain.api import user_router
+from backend.domain.schema.user_schema import UserSchema
 from core.database.session import db_session
 
 
@@ -40,7 +40,7 @@ async def client(mock_user_service: MagicMock, mock_session: AsyncMock):
 
     container = AppContainer()
     container.user_service.override(mock_user_service)
-    container.wire(modules=["backend.domain.user.api.user"])
+    container.wire(modules=["backend.domain.api.user"])
 
     transport = ASGITransport(app=test_app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:

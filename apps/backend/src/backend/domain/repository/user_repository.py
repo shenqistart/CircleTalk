@@ -1,10 +1,10 @@
 """用户数据访问层。"""
 
+from core.repository.base_repository import BaseRepository
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain.user.model.user import User
-from core.repository.base_repository import BaseRepository
+from backend.domain.model.user import User
 
 
 class UserRepository(BaseRepository[User]):

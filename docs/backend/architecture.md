@@ -17,14 +17,23 @@ bedrock/
 ├── apps/
 │   ├── backend/
 │   │   └── src/backend/
-│   │       ├── main.py        # 启动 + 路由
-│   │       ├── container.py   # DI 容器
-│   │       ├── common/        # 响应/异常/分页
-│   │       └── domain/        # 业务域
-│   │           └── user/      # 用户管理示例
+│   │       ├── main.py              # 启动 + 路由注册
+│   │       ├── container.py         # DI 容器（AppContainer）
+│   │       ├── common/              # 通用工具
+│   │       │   ├── error_handler.py # 全局异常处理
+│   │       │   ├── pagination.py    # 分页参数 & 响应
+│   │       │   └── response.py      # 统一响应封装
+│   │       └── domain/              # 业务域
+│   │           ├── api/             # API 端点
+│   │           ├── model/           # ORM 模型
+│   │           ├── repository/      # 数据访问
+│   │           ├── schema/          # Pydantic Schema
+│   │           └── service/         # 业务逻辑
 │   └── frontend/
 └── packages/
-    └── core/                  # 共享基础设施
+    ├── core/                  # 共享基础设施（database、repository、cache、logging 等 13 模块）
+    ├── llm/                   # LLM 能力封装（models、chains、vector、prompt、observability）
+    └── knowledge/             # 知识库（model、repository、schema）
 ```
 
 分层职责：

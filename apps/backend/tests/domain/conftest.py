@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from backend.domain.user.repository.user_repository import UserRepository
-from backend.domain.user.service.user_service import UserService
+from backend.domain.repository.user_repository import UserRepository
+from backend.domain.service.user_service import UserService
 
 
 @pytest.fixture

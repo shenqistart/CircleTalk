@@ -2,10 +2,9 @@
 
 from datetime import datetime
 
+from core.database.base import AuditMixin, Base
 from sqlalchemy import ARRAY, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
-
-from core.database.base import AuditMixin, Base
 
 
 class User(Base, AuditMixin):

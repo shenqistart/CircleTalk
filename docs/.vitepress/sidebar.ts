@@ -28,6 +28,15 @@ export const sidebar = [
     ],
   },
   {
+    text: '共享包（Packages）',
+    collapsed: false,
+    items: [
+      { text: 'Core 基础设施', link: '/packages/core' },
+      { text: 'LLM 能力封装', link: '/packages/llm' },
+      { text: 'Knowledge 知识库', link: '/packages/knowledge' },
+    ],
+  },
+  {
     text: 'Superpowers',
     collapsed: false,
     items: [

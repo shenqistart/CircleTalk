@@ -10,7 +10,7 @@ paths: apps/backend/**/*.py
 
 | 新增内容 | 放置位置 |
 |---------|---------|
-| 新业务域 | `domain/<name>/{api,service,repository,model,schema}/` |
+| 新业务域 | `domain/{api,service,repository,model,schema}/` |
 | 新配置项 | `core/config.py` 对应 Settings 类 |
 | 新外部适配器 | `core/adapter/<name>/` |
 | 新工具函数 | `core/utils/`（禁止在 domain 内建 utils） |

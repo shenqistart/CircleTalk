@@ -18,8 +18,8 @@ features:
       src: /icons/terminal.svg
     title: Claude Code 规范
     details: 完整的 .claude/ 配置体系 — rules、skills、hooks、settings
-    link: /superpowers/specs/2026-04-01-bedrock-design
-    linkText: 查看设计文档
+    link: /claude/architecture
+    linkText: 查看配置架构
   - icon:
       src: /icons/layers.svg
     title: 后端三层架构

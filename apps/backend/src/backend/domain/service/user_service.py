@@ -2,11 +2,11 @@
 
 import uuid
 
+from core.context.request import current_username
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.domain.user.repository.user_repository import UserRepository
-from backend.domain.user.schema.user_schema import UserCreate, UserSchema, UserUpdate
-from core.context.request import current_username
+from backend.domain.repository.user_repository import UserRepository
+from backend.domain.schema.user_schema import UserCreate, UserSchema, UserUpdate
 
 
 class UserService:

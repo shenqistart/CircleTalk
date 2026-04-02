@@ -6,12 +6,6 @@ import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from backend.container import AppContainer
-from backend.domain.user.api import user_router
 from core.config.loader import ConfigLoader
 from core.context.request import (
     RequestContextParams,
@@ -19,6 +13,12 @@ from core.context.request import (
     set_request_context,
 )
 from core.database.state import DatabaseRegistry
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from backend.container import AppContainer
+from backend.domain.api import user_router
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ async def initialize_db_engines(config: dict) -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """应用生命周期：启动与关闭。"""
     config = ConfigLoader.load()
 
@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # 装配依赖注入容器
     container = AppContainer()
-    container.wire(modules=["backend.domain.user.api.user"])
+    container.wire(modules=["backend.domain.api.user"])
     app.state.container = container
 
     logger.info("Bedrock 后端已在端口 %s 启动", config.get("server", {}).get("port", 8000))

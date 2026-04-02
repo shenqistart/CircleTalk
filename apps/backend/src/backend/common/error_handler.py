@@ -15,7 +15,9 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-def error_handler(operation: str) -> Callable[
+def error_handler(
+    operation: str,
+) -> Callable[
     [Callable[P, Coroutine[Any, Any, R]]],
     Callable[P, Coroutine[Any, Any, R]],
 ]:
@@ -42,7 +44,9 @@ def error_handler(operation: str) -> Callable[
     return decorator
 
 
-def response_error_handler(operation: str) -> Callable[
+def response_error_handler(
+    operation: str,
+) -> Callable[
     [Callable[P, Coroutine[Any, Any, CommonResponse[Any]]]],
     Callable[P, Coroutine[Any, Any, CommonResponse[Any]]],
 ]:

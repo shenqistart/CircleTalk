@@ -10,7 +10,7 @@ from core.config.loader import ConfigLoader
 from core.database.base import Base
 
 # 导入所有模型，确保 Alembic 能检测到
-from backend.domain.user.model.user import User  # noqa: F401
+from backend.domain.model.user import User  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

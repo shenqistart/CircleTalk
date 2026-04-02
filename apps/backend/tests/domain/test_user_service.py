@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from backend.domain.user.schema.user_schema import UserCreate
-from backend.domain.user.service.user_service import UserService
+from backend.domain.schema.user_schema import UserCreate
+from backend.domain.service.user_service import UserService
 
 
 @pytest.mark.asyncio
@@ -32,7 +32,7 @@ async def test_create_user_success(
     mock_user.updated_by = "admin"
     mock_user_repository.create = AsyncMock(return_value=mock_user)
 
-    with patch("backend.domain.user.service.user_service.current_username", return_value="admin"):
+    with patch("backend.domain.service.user_service.current_username", return_value="admin"):
         result = await user_service.create_user(
             mock_session,
             UserCreate(username="johndoe", display_name="John Doe", email="john@example.com", roles=["user"]),
@@ -52,7 +52,7 @@ async def test_create_user_duplicate_username(
     mock_user_repository.get_by_username = AsyncMock(return_value=MagicMock())
 
     with pytest.raises(ValueError, match="already exists"):
-        with patch("backend.domain.user.service.user_service.current_username", return_value="admin"):
+        with patch("backend.domain.service.user_service.current_username", return_value="admin"):
             await user_service.create_user(
                 mock_session,
                 UserCreate(username="existing", display_name="Existing User"),
@@ -123,7 +123,7 @@ async def test_toggle_status(
     toggled_user.updated_by = None
     mock_user_repository.update = AsyncMock(return_value=toggled_user)
 
-    with patch("backend.domain.user.service.user_service.current_username", return_value="admin"):
+    with patch("backend.domain.service.user_service.current_username", return_value="admin"):
         result = await user_service.toggle_status(mock_session, "user-1")
 
     assert result is not None

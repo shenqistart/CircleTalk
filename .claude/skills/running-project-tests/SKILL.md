@@ -20,10 +20,9 @@ description: "Run project tests: unit tests, integration tests, smart module sel
 apps/backend/tests/
 ├── conftest.py              # 全局 fixtures
 └── domain/
-    └── user/
-        ├── conftest.py      # 模块 fixtures
-        ├── test_user_service.py
-        └── test_user_api.py
+    ├── conftest.py          # 模块 fixtures
+    ├── test_user_service.py
+    └── test_user_api.py
 ```
 
 ## 运行命令
@@ -33,10 +32,10 @@ apps/backend/tests/
 cd apps/backend && pytest
 
 # 特定模块
-pytest tests/domain/user/ -v
+pytest tests/domain/ -v
 
 # 特定测试
-pytest tests/domain/user/test_user_service.py::test_create_user_success -v
+pytest tests/domain/test_user_service.py::test_create_user_success -v
 
 # 带覆盖率
 pytest --cov=backend --cov-report=term-missing
@@ -45,7 +44,7 @@ pytest --cov=backend --cov-report=term-missing
 ## 智能选择
 
 根据变更文件自动选择测试：
-- `domain/user/**` → `tests/domain/user/`
+- `domain/**` → `tests/domain/`
 - `common/**` → 全部测试
 
 ## 约束
