@@ -29,14 +29,14 @@
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
-        "command": ".claude/hooks/code-guard.sh \"$TOOL_INPUT\"",
-        "timeout": 30000
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/code-guard.sh \"$TOOL_INPUT\"",
+            "timeout": 30
+          }
+        ]
       }
     ]
-  },
-  "enabledPlugins": [
-    "code-review",
-    "code-simplifier"
-  ],
-  "language": "zh-CN"
+  }
 }
