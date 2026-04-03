@@ -28,9 +28,9 @@ async def search_users(
     user_service: Annotated[UserService, Depends(Provide["user_service"])],
     session: Annotated[AsyncSession, Depends(db_session)],
     pagination: Annotated[PageParams, Depends()],
-    keyword: str | None = Query(None, description="搜索关键词"),
-    status: str | None = Query(None, description="按状态筛选"),
-    role: str | None = Query(None, description="按角色筛选"),
+    keyword: Annotated[str | None, Query(description="搜索关键词")] = None,
+    status: Annotated[str | None, Query(description="按状态筛选")] = None,
+    role: Annotated[str | None, Query(description="按角色筛选")] = None,
 ) -> CommonResponse[Any]:
     users, total = await user_service.search_users(
         session,

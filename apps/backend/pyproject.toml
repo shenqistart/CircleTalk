@@ -135,6 +135,12 @@ select = [
 
     # flake8-fixme - FIXME 注释规范
     "FIX",      # flake8-fixme
+
+    # fastapi - FastAPI 最佳实践
+    "FAST",     # fastapi
+
+    # flake8-type-checking - TYPE_CHECKING 导入优化
+    "TC",       # flake8-type-checking
 ]
 
 # 允许自动修复所有可修复的问题
