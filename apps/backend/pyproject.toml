@@ -39,14 +39,177 @@ packages = ["src/backend"]
 [tool.ruff]
 target-version = "py313"
 line-length = 120
+fix = true
 src = ["src"]
+exclude = [
+    ".venv",
+    ".ruff_cache",
+    ".mypy_cache",
+    ".pytest_cache",
+]
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "B", "SIM", "I", "UP", "S", "RUF"]
-ignore = ["S101", "B008"]
+# ==================== 最严格的规则集 ====================
+select = [
+    # pycodestyle errors and warnings
+    "E",        # pycodestyle errors
+    "W",        # pycodestyle warnings
 
+    # pyflakes
+    "F",        # pyflakes
+
+    # flake8-bugbear - 捕获常见错误和反模式
+    "B",        # flake8-bugbear
+
+    # flake8-comprehensions - 列表/字典推导式优化
+    "C4",       # flake8-comprehensions
+
+    # flake8-simplify - 简化代码
+    "SIM",      # flake8-simplify
+
+    # isort - 导入排序
+    "I",        # isort
+
+    # mccabe - 复杂度检查
+    "C90",      # mccabe
+
+    # pyupgrade - 现代化 Python 语法
+    "UP",       # pyupgrade
+
+    # flake8-2020 - 检查误用 sys.version
+    "YTT",      # flake8-2020
+
+    # flake8-bandit - 安全检查
+    "S",        # flake8-bandit
+
+    # flake8-debugger - 禁止 debugger 导入
+    "T10",      # flake8-debugger
+
+    # pygrep-hooks - 常见错误模式
+    "PGH",      # pygrep-hooks
+
+    # Ruff 特定规则
+    "RUF",      # ruff
+
+    # flake8-unused-arguments - 未使用的参数
+    "ARG",      # flake8-unused-arguments
+
+    # flake8-use-pathlib - 使用 pathlib
+    "PTH",      # flake8-use-pathlib
+
+    # flake8-pytest-style - pytest 最佳实践
+    "PT",       # flake8-pytest-style
+
+    # flake8-return - return 语句优化
+    "RET",      # flake8-return
+
+    # pylint - 函数结构/复杂度检查
+    "PL",       # pylint
+
+    # flake8-pie - 杂项优化
+    "PIE",      # flake8-pie
+
+    # flake8-executable - 可执行权限检查
+    "EXE",      # flake8-executable
+
+    # flake8-import-conventions - 导入约定
+    "ICN",      # flake8-import-conventions
+
+    # flake8-errmsg - 错误消息格式
+    "EM",       # flake8-errmsg
+
+    # tryceratops - 异常处理最佳实践
+    "TRY",      # tryceratops
+
+    # FURB - 现代 Python 重构建议
+    "FURB",     # refurb
+
+    # flake8-annotations - 类型注解检查（补充 Pyright）
+    "ANN",      # flake8-annotations
+
+    # eradicate - 检测注释掉的代码
+    "ERA",      # eradicate
+
+    # flake8-todos - TODO 注释规范
+    "TD",       # flake8-todos
+
+    # flake8-fixme - FIXME 注释规范
+    "FIX",      # flake8-fixme
+]
+
+# 允许自动修复所有可修复的问题
+fixable = ["ALL"]
+unfixable = []
+
+# 允许下划线前缀的未使用变量
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# 允许在中文注释和文档中使用的全角标点，避免 RUF003 误报
+allowed-confusables = [
+    "，",
+    "。",
+    "！",
+    "？",
+    "：",
+    "；",
+    "（",
+    "）",
+    "【",
+    "】",
+    "《",
+    "》",
+    "\u201c",
+    "\u201d",
+    "\u2018",
+    "\u2019",
+    "、",
+    "⋯",
+    "…",
+    "—",
+    "－",
+]
+
+# McCabe 复杂度限制
+mccabe.max-complexity = 10
+
+[tool.ruff.lint.pylint]
+# 函数参数数量上限，适配依赖注入场景但仍保持可读性
+max-args = 10
+
+# 测试目录规则例外
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "S106"]
+"tests/**/*.py" = [
+    "S101",    # assert 在测试中是必要的
+    "S105",    # 测试用硬编码密码
+    "S106",    # 测试用硬编码密码参数
+    "PLR2004", # 魔法数字在测试中常见
+    "PT006",   # pytest 参数化格式
+    "PT017",   # pytest.raises 断言风格
+    "B007",    # 未使用的循环变量
+    "ARG001",  # 未使用的函数参数（fixture 可能如此）
+    "ARG002",  # 未使用的方法参数
+    "ANN001",  # 缺失函数参数类型注解
+    "ANN002",  # 缺失 *args 类型注解
+    "ANN003",  # 缺失 **kwargs 类型注解
+    "ANN201",  # 缺失返回类型注解
+    "ANN202",  # 缺失私有函数返回类型注解
+    "ANN401",  # Any 类型在测试 Mock 中常用
+    "EM101",   # 异常中的字符串字面量（测试代码常见）
+    "EM102",   # 异常中的 f-string
+    "TRY003",  # 异常消息格式（测试代码常见）
+    "ERA001",  # 注释掉的代码（测试中保留示例注释）
+    "F841",    # 未使用的局部变量（测试中用于验证调用）
+    "RUF001",  # 中文字符（测试数据常用）
+    "RUF059",  # 未使用的解包变量
+    "PLC0415", # 顶层导入（测试中按需导入）
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
 
 [tool.pyright]
 pythonVersion = "3.13"
@@ -56,4 +219,12 @@ venv = ".venv"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-v --tb=short"
+markers = [
+    "no_setup: 标记不需要应用初始化的测试（如导入测试）",
+    "integration: 标记集成测试（需要外部服务）",
+    "slow: 标记慢速测试（如真实 LLM 调用）",
+]

@@ -3,7 +3,7 @@
 import logging
 import time
 import uuid
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from core.config.loader import ConfigLoader
@@ -28,7 +28,7 @@ async def initialize_db_engines(config: dict) -> None:
     db_config = config.get("database", {})
     tenants = config.get("tenants", {})
 
-    db_name = list(tenants.values())[0].get("database", {}).get("name", "bedrock") if tenants else "bedrock"
+    db_name = next(iter(tenants.values())).get("database", {}).get("name", "bedrock") if tenants else "bedrock"
     url = (
         f"postgresql+psycopg://{db_config.get('username', 'postgres')}"
         f":{db_config.get('password', 'postgres')}"
@@ -96,7 +96,7 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def request_context_middleware(request: Request, call_next) -> Response:
+async def request_context_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     """为每个请求设置请求上下文（租户、用户）。"""
     set_request_context(
         RequestContextParams(
@@ -107,14 +107,13 @@ async def request_context_middleware(request: Request, call_next) -> Response:
         )
     )
     try:
-        response = await call_next(request)
-        return response
+        return await call_next(request)
     finally:
         clear_request_context()
 
 
 @app.middleware("http")
-async def log_requests_middleware(request: Request, call_next) -> Response:
+async def log_requests_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     """记录请求方法、路径及响应状态。"""
     start = time.perf_counter()
     response = await call_next(request)

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useUsers, useDeleteUser } from '../hooks/useUsers'
+import { useDeleteUser, useUsers } from '../hooks/useUsers'
 import { UserForm } from './UserForm'
 import { UserStatusToggle } from './UserStatusToggle'
 import { usePagination } from '@/shared/hooks/usePagination'
 import type { UserSearchParams } from '../types'
-import { Search, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Search, Trash2 } from 'lucide-react'
 
 export default function UserTable() {
   const { page, size, goToPage, nextPage, prevPage } = usePagination()

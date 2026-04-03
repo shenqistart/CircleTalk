@@ -36,7 +36,7 @@ def error_handler(
                 logger.warning("%s failed: %s", operation, e)
                 raise HTTPException(status_code=400, detail=str(e)) from e
             except Exception as e:
-                logger.exception("%s error: %s", operation, e)
+                logger.exception("%s error", operation)
                 raise HTTPException(status_code=500, detail=f"{operation}失败") from e
 
         return wrapper
@@ -62,8 +62,8 @@ def response_error_handler(
             except ValueError as e:
                 logger.warning("%s failed: %s", operation, e)
                 return error_response(str(e), code=400)
-            except Exception as e:
-                logger.exception("%s error: %s", operation, e)
+            except Exception:
+                logger.exception("%s error", operation)
                 return error_response(f"{operation}失败")
 
         return wrapper

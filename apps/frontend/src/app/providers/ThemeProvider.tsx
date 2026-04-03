@@ -1,14 +1,9 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 
-type Theme = 'light' | 'dark'
-
-const ThemeContext = createContext<{ theme: Theme; toggleTheme: () => void }>({
-  theme: 'light',
-  toggleTheme: () => {},
-})
+import { ThemeContext } from './ThemeContext'
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
 
   return (
@@ -16,8 +11,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       <div data-theme={theme}>{children}</div>
     </ThemeContext.Provider>
   )
-}
-
-export function useTheme() {
-  return useContext(ThemeContext)
 }

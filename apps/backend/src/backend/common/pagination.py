@@ -1,12 +1,10 @@
 """FastAPI 查询参数与响应的分页模型。"""
 
 from math import ceil
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from fastapi import Query
 from pydantic import BaseModel
-
-T = TypeVar("T")
 
 
 class PageParams:
@@ -21,7 +19,7 @@ class PageParams:
         self.size = size
 
 
-class PageResult(BaseModel, Generic[T]):
+class PageResult[T](BaseModel):
     """通用分页响应模型。"""
 
     content: list[T]

@@ -1,13 +1,12 @@
 """统一 API 响应封装。"""
 
-from typing import Any, Generic, TypeVar
+from math import ceil
+from typing import Any
 
 from pydantic import BaseModel
 
-T = TypeVar("T")
 
-
-class CommonResponse(BaseModel, Generic[T]):
+class CommonResponse[T](BaseModel):
     """标准 API 响应信封。"""
 
     code: int = 200
@@ -15,7 +14,7 @@ class CommonResponse(BaseModel, Generic[T]):
     data: T | None = None
 
 
-def success_response(data: Any = None, message: str = "success") -> CommonResponse[Any]:
+def success_response(data: Any = None, message: str = "success") -> CommonResponse[Any]:  # noqa: ANN401
     return CommonResponse(code=200, message=message, data=data)
 
 
@@ -39,8 +38,6 @@ def pageable_success_response(
     message: str = "success",
 ) -> CommonResponse[dict[str, Any]]:
     """构建分页成功响应。"""
-    from math import ceil
-
     return CommonResponse(
         code=200,
         message=message,
