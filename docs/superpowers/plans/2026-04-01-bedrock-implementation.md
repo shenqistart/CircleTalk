@@ -2934,14 +2934,14 @@ git commit -m "🐞 test: add User domain unit and API integration tests"
 - Create: `.claude/rules/backend/conventions.md`
 - Create: `.claude/rules/frontend/react.md`
 
-Due to the volume of these files, each is migrated from provider-aip with all `provider-aip`, `pharmbrain`, and business-specific references removed.
+Due to the volume of these files, each is adapted from existing项目规范 with all旧项目引用 and business-specific references removed.
 
 - [ ] **Step 1: Create core rules (principles, workflow, quality, git)**
 
 Create all four files with content adapted from the source. Key changes:
-- Remove all `provider-aip` references
+- Remove all旧项目引用
 - Remove LangGraph/Chat/Knowledge specific mentions
-- Replace `provider-aip` paths with `bedrock` equivalents
+- Replace paths with `bedrock` equivalents
 - Remove Harbor registry references from git.md
 - Update `.envrc` paths in git.md to use bedrock project root
 - Keep all architecture principles, quality standards, and workflow intact
@@ -2981,11 +2981,11 @@ git commit -m "📔 docs: add Claude Code development rules migrated for bedrock
 
 - [ ] **Step 1: Create skills README and enforcing-project-standards**
 
-Migrate from provider-aip. Key changes:
-- `README.md`: Remove provider-aip skill references; list 4 retained skills
+Migrate from existing standards. Key changes:
+- `README.md`: Remove旧项目 skill references; list 4 retained skills
 - `SKILL.md`: Remove Flutter checks; remove LangGraph/Chat specific architecture checks; keep Python/TypeScript/React checks
 - `FILTERS.md`: Keep as-is (generic filtering rules)
-- `PATTERNS.md`: Remove Flutter sections; remove provider-aip specific domain examples; keep SOLID, naming conventions, React patterns, layered architecture checks
+- `PATTERNS.md`: Remove Flutter sections; remove旧项目 specific domain examples; keep SOLID, naming conventions, React patterns, layered architecture checks
 
 - [ ] **Step 2: Create running-project-tests skill**
 
@@ -3018,7 +3018,7 @@ git commit -m "📔 docs: add Claude Code project skills for bedrock"
 
 - [ ] **Step 1: Create code-guard.sh**
 
-Migrate from provider-aip. Key changes:
+Migrate from existing standards. Key changes:
 - Remove Phase 0 (freeze scope detection) — bedrock doesn't need scoped editing
 - Keep Phase 1: Ruff format/check + Pyright for Python; ESLint for TypeScript
 - Keep Phase 2: File modification tracking
@@ -3166,8 +3166,8 @@ pnpm dev
 
 - [ ] **Step 2: Create backend architecture doc**
 
-Migrate `docs/backend/architecture.md` from provider-aip:
-- Remove all provider-aip references
+Migrate `docs/backend/architecture.md` from existing standards:
+- Remove all旧项目 references
 - Remove LLM/Chat/Knowledge/Analytics domain examples
 - Replace with User domain examples
 - Keep request chain, 3-layer rules, session strategy, DI pattern, API routing rules
@@ -3175,7 +3175,7 @@ Migrate `docs/backend/architecture.md` from provider-aip:
 
 - [ ] **Step 3: Create backend DI doc**
 
-Migrate `docs/backend/dependency-injection.md` from provider-aip:
+Migrate `docs/backend/dependency-injection.md` from existing standards:
 - Simplify container examples to show User domain only
 - Remove ChatService/ChatServiceDependencies Factory examples
 - Keep core principles, session strategy, layering rules, common pitfalls
@@ -4222,7 +4222,7 @@ If changes exist, commit them.
 
 ### packages/core 补全
 
-从 provider-aip 迁移的核心基础设施模块：
+从已有项目迁移的核心基础设施模块：
 - `logging/`: 生产级日志系统（彩色输出、请求 ID 追踪、智能异常过滤、性能计时）
 - `exception/`: 统一异常层次（BusinessError、ResourceNotFoundError 等）
 - `cache/` 升级: CacheBackend 抽象层 + MemoryCache + 工厂模式

@@ -18,6 +18,7 @@ export const sidebar = [
     items: [
       { text: '后端架构与开发规范', link: '/backend/architecture' },
       { text: '依赖注入架构指南', link: '/backend/dependency-injection' },
+      { text: '代码质量规范', link: '/backend/code-quality' },
     ],
   },
   {
@@ -25,6 +26,7 @@ export const sidebar = [
     collapsed: false,
     items: [
       { text: '前端开发指南', link: '/frontend/development' },
+      { text: '代码质量规范', link: '/frontend/code-quality' },
       { text: 'Electron 桌面端开发指南', link: '/frontend/electron' },
     ],
   },

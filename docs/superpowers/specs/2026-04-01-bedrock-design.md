@@ -720,11 +720,11 @@ src/
 
 ### 10.5 迁移策略
 
-从 provider-aip 迁移时：
-- 去除所有 `provider-aip`、`pharmbrain` 等旧公司/旧项目引用
+从已有项目迁移时：
+- 去除所有旧项目引用和业务耦合
 - 去除 freeze scope 机制（code-guard.sh Phase 0）
 - 保留通用的架构原则、工作流、质量标准、三层规则
-- 配置前缀从 `PROVIDER_AIP_` 改为 `BEDROCK_`
+- 配置前缀统一为 `BEDROCK_`
 
 ---
 
