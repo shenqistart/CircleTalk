@@ -46,7 +46,7 @@ cd apps/backend && pytest -v
 ### Step 4: Commit
 
 根据变更内容生成提交消息：
-- 使用 emoji + type 格式
+- 使用 `type(scope): description` 格式（Conventional Commits）
 - 标题简洁聚焦 "why"
 - 可选详细描述
 
