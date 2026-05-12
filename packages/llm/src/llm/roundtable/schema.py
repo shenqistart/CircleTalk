@@ -1,50 +1,67 @@
-"""Roundtable dialogue domain schemas."""
+"""Roundtable decision advisor domain schemas."""
 
-from pydantic import BaseModel, Field
+from dataclasses import dataclass, field
+from enum import StrEnum
 
 
-class RoundtablePersona(BaseModel):
-    """A decision persona converted from nuwa-skill metadata."""
+class RoundName(StrEnum):
+    """Supported zhuzi-style discussion rounds."""
 
-    id: str = Field(min_length=1)
-    skill_name: str = Field(min_length=1)
-    display_name: str = Field(min_length=1)
-    summary: str = Field(min_length=1)
-    prompt: str = Field(min_length=1)
+    OPENING = "opening"
+    REBUTTAL = "rebuttal"
+    CLOSING = "closing"
+    SYNTHESIS = "synthesis"
+    FOLLOW_UP = "follow_up"
+
+
+@dataclass(frozen=True)
+class RoundtablePersona:
+    """Persona metadata converted from nuwa-skill style sources."""
+
+    id: str
+    skill_name: str
+    display_name: str
+    summary: str
+    prompt: str
+    perspective_tags: tuple[str, ...] = field(default_factory=tuple)
     source_url: str | None = None
-    metadata: dict[str, object] = Field(default_factory=dict)
     selection_reason: str | None = None
 
 
-class SelectedPersona(RoundtablePersona):
-    """A persona selected for one session."""
+@dataclass(frozen=True)
+class SelectedPersona:
+    """Persona selected for a session."""
 
+    persona: RoundtablePersona
     selection_source: str
     sequence: int
+    selection_reason: str | None = None
 
 
-class RoundtableMessage(BaseModel):
-    """One persisted roundtable transcript message."""
+@dataclass(frozen=True)
+class RoundtableMessage:
+    """One persisted roundtable utterance."""
 
     role: str
     content: str
     round_name: str
     persona_id: str | None = None
     persona_name: str | None = None
-    parent_message_id: str | None = None
 
 
-class DecisionArtifact(BaseModel):
-    """Moderator synthesis artifacts."""
+@dataclass(frozen=True)
+class DecisionArtifact:
+    """Moderator synthesis artifact: memo, recommendation, reasons and debate map."""
 
     memo: str
     recommendation: str
-    reasons: list[str]
-    debate_map: list[dict[str, str]]
+    reasons: tuple[str, ...]
+    debate_map: tuple[dict[str, str], ...]
 
 
-class RoundtableRunResult(BaseModel):
-    """Complete deterministic/fallback orchestration result."""
+@dataclass(frozen=True)
+class RoundtableResult:
+    """Completed discussion result."""
 
-    messages: list[RoundtableMessage]
+    messages: tuple[RoundtableMessage, ...]
     artifact: DecisionArtifact
