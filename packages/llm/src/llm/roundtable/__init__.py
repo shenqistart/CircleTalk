@@ -1,23 +1,20 @@
-from llm.roundtable.deep_agent_adapter import deepagents_available, run_with_deepagents_or_fallback
-from llm.roundtable.orchestrator import answer_follow_up, run_roundtable, synthesize
-from llm.roundtable.persona import get_persona, get_personas, list_personas
-from llm.roundtable.selection import recommend_personas, select_personas
-from llm.roundtable.schema import DecisionArtifact, PersonaRecommendation, RoundtablePersona, RoundtableResult, RoundtableTurn
+"""Roundtable dialogue helpers."""
+
+from llm.roundtable.deep_agent_adapter import RoundtableDeepAgentAdapter
+from llm.roundtable.orchestrator import RoundtableOrchestrator
+from llm.roundtable.persona import load_default_personas, load_persona
+from llm.roundtable.selection import recommend_personas, select_manual_personas
+from llm.roundtable.schema import DecisionArtifact, RoundtablePersona, RoundtableRunResult, SelectedPersona
 
 __all__ = [
     "DecisionArtifact",
-    "PersonaRecommendation",
+    "RoundtableDeepAgentAdapter",
+    "RoundtableOrchestrator",
     "RoundtablePersona",
-    "RoundtableResult",
-    "RoundtableTurn",
-    "answer_follow_up",
-    "deepagents_available",
-    "get_persona",
-    "get_personas",
-    "list_personas",
+    "RoundtableRunResult",
+    "SelectedPersona",
+    "load_default_personas",
+    "load_persona",
     "recommend_personas",
-    "run_roundtable",
-    "run_with_deepagents_or_fallback",
-    "select_personas",
-    "synthesize",
+    "select_manual_personas",
 ]

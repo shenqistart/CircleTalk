@@ -1,47 +1,50 @@
-"""Roundtable dialogue value objects."""
+"""Roundtable dialogue domain schemas."""
 
-from dataclasses import dataclass, field
-from typing import Literal
-
-RoundName = Literal["opening", "rebuttal", "closing"]
+from pydantic import BaseModel, Field
 
 
-@dataclass(frozen=True)
-class RoundtablePersona:
-    id: str
-    display_name: str
-    skill_name: str
-    summary: str
-    prompt: str
+class RoundtablePersona(BaseModel):
+    """A decision persona converted from nuwa-skill metadata."""
+
+    id: str = Field(min_length=1)
+    skill_name: str = Field(min_length=1)
+    display_name: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    prompt: str = Field(min_length=1)
     source_url: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
     selection_reason: str | None = None
-    metadata: dict[str, object] = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
-class PersonaRecommendation:
-    persona: RoundtablePersona
-    reason: str
+class SelectedPersona(RoundtablePersona):
+    """A persona selected for one session."""
+
+    selection_source: str
+    sequence: int
 
 
-@dataclass(frozen=True)
-class RoundtableTurn:
-    persona_id: str | None
-    persona_name: str | None
-    role: Literal["user", "persona", "moderator", "system"]
-    round_name: RoundName | Literal["synthesis", "follow_up", "system"]
+class RoundtableMessage(BaseModel):
+    """One persisted roundtable transcript message."""
+
+    role: str
     content: str
+    round_name: str
+    persona_id: str | None = None
+    persona_name: str | None = None
+    parent_message_id: str | None = None
 
 
-@dataclass(frozen=True)
-class DecisionArtifact:
+class DecisionArtifact(BaseModel):
+    """Moderator synthesis artifacts."""
+
     memo: str
     recommendation: str
     reasons: list[str]
     debate_map: list[dict[str, str]]
 
 
-@dataclass(frozen=True)
-class RoundtableResult:
-    transcript: list[RoundtableTurn]
+class RoundtableRunResult(BaseModel):
+    """Complete deterministic/fallback orchestration result."""
+
+    messages: list[RoundtableMessage]
     artifact: DecisionArtifact

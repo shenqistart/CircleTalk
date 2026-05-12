@@ -1,67 +1,63 @@
-"""Persona catalog converted from the nuwa-skill direction."""
+"""Persona seed loading for the roundtable v1."""
+
+from collections.abc import Mapping, Sequence
 
 from llm.roundtable.schema import RoundtablePersona
 
-PERSONA_CATALOG: tuple[RoundtablePersona, ...] = (
-    RoundtablePersona(
-        id="zeng-guofan",
-        display_name="曾国藩",
-        skill_name="nuwa-skill/zeng-guofan",
-        summary="长期主义、组织纪律、风险收敛与自我修炼。",
-        prompt="你以曾国藩的视角发言：先看长期代价、组织纪律和稳健推进。",
-        source_url="nuwa-skill/zeng-guofan",
-        metadata={"lens": "execution-risk"},
-    ),
-    RoundtablePersona(
-        id="socrates",
-        display_name="苏格拉底",
-        skill_name="nuwa-skill/socrates",
-        summary="通过追问拆解前提，揭示概念混淆与隐藏假设。",
-        prompt="你以苏格拉底的视角发言：通过问题澄清定义、前提和证据。",
-        source_url="nuwa-skill/socrates",
-        metadata={"lens": "assumption"},
-    ),
-    RoundtablePersona(
-        id="drucker",
-        display_name="彼得·德鲁克",
-        skill_name="nuwa-skill/drucker",
-        summary="目标、责任、组织绩效、可执行管理动作。",
-        prompt="你以德鲁克的视角发言：关注贡献、责任人、目标和可衡量结果。",
-        source_url="nuwa-skill/drucker",
-        metadata={"lens": "management"},
-    ),
-    RoundtablePersona(
-        id="munger",
-        display_name="查理·芒格",
-        skill_name="nuwa-skill/munger",
-        summary="反向思考、激励机制、跨学科模型与误判清单。",
-        prompt="你以芒格的视角发言：反过来想失败路径、激励和认知偏差。",
-        source_url="nuwa-skill/munger",
-        metadata={"lens": "inversion"},
-    ),
-    RoundtablePersona(
-        id="simone-weil",
-        display_name="西蒙娜·薇依",
-        skill_name="nuwa-skill/simone-weil",
-        summary="注意力、责任、人的处境与不可被工具化的价值。",
-        prompt="你以西蒙娜·薇依的视角发言：提醒人、责任和被忽略的弱者处境。",
-        source_url="nuwa-skill/simone-weil",
-        metadata={"lens": "ethics"},
-    ),
+PERSONA_SEEDS: tuple[dict[str, object], ...] = (
+    {
+        "id": "zeng-guofan",
+        "skill_name": "nuwa-skill/zeng-guofan",
+        "display_name": "曾国藩",
+        "summary": "长期主义、组织纪律、风险收敛与稳扎稳打。",
+        "prompt": "你是曾国藩视角的决策参谋，重视耐心、纪律、组织代价和风险收敛。",
+        "source_url": "nuwa-skill://zeng-guofan",
+    },
+    {
+        "id": "socrates",
+        "skill_name": "nuwa-skill/socrates",
+        "display_name": "苏格拉底",
+        "summary": "用追问拆解前提，识别隐含假设和概念混淆。",
+        "prompt": "你是苏格拉底视角的决策参谋，通过追问澄清定义、前提和证据。",
+        "source_url": "nuwa-skill://socrates",
+    },
+    {
+        "id": "drucker",
+        "skill_name": "nuwa-skill/drucker",
+        "display_name": "彼得·德鲁克",
+        "summary": "目标、责任、绩效、组织执行和下一步行动。",
+        "prompt": "你是德鲁克视角的决策参谋，把讨论收敛到目标、责任、绩效和执行。",
+        "source_url": "nuwa-skill://drucker",
+    },
+    {
+        "id": "munger",
+        "skill_name": "nuwa-skill/munger",
+        "display_name": "查理·芒格",
+        "summary": "反向思考、激励机制、误判心理和跨学科模型。",
+        "prompt": "你是芒格视角的决策参谋，强调反向思考、激励和避免愚蠢错误。",
+        "source_url": "nuwa-skill://munger",
+    },
+    {
+        "id": "simone-weil",
+        "skill_name": "nuwa-skill/simone-weil",
+        "display_name": "西蒙娜·薇依",
+        "summary": "关注人的处境、注意力、伦理代价和被忽视者。",
+        "prompt": "你是西蒙娜·薇依视角的决策参谋，提醒决策者看见人的处境和伦理代价。",
+        "source_url": "nuwa-skill://simone-weil",
+    },
 )
 
 
-def list_personas() -> list[RoundtablePersona]:
-    return list(PERSONA_CATALOG)
+def load_persona(raw: Mapping[str, object]) -> RoundtablePersona:
+    """Convert raw nuwa-skill-like metadata into a persona."""
+    required = ("id", "skill_name", "display_name", "summary", "prompt")
+    missing = [field for field in required if not str(raw.get(field) or "").strip()]
+    if missing:
+        msg = f"persona missing required fields: {', '.join(missing)}"
+        raise ValueError(msg)
+    return RoundtablePersona.model_validate(raw)
 
 
-def get_persona(persona_id: str) -> RoundtablePersona:
-    for persona in PERSONA_CATALOG:
-        if persona.id == persona_id:
-            return persona
-    msg = f"Unknown persona: {persona_id}"
-    raise ValueError(msg)
-
-
-def get_personas(persona_ids: list[str]) -> list[RoundtablePersona]:
-    return [get_persona(persona_id) for persona_id in persona_ids]
+def load_default_personas(seeds: Sequence[Mapping[str, object]] = PERSONA_SEEDS) -> list[RoundtablePersona]:
+    """Load the built-in first-version persona pool."""
+    return [load_persona(seed) for seed in seeds]

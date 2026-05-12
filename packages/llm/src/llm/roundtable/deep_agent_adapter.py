@@ -1,21 +1,19 @@
-"""DeepAgents boundary for first-version synchronous orchestration."""
+"""DeepAgents boundary for request-scoped roundtable orchestration."""
 
-from llm.roundtable.orchestrator import run_roundtable
-from llm.roundtable.schema import RoundtablePersona, RoundtableResult
+from llm.roundtable.orchestrator import RoundtableOrchestrator
+from llm.roundtable.schema import RoundtableRunResult, SelectedPersona
 
 
 class DeepAgentsUnavailableError(RuntimeError):
-    """Raised when DeepAgents cannot be imported or initialized."""
+    """Raised when DeepAgents cannot be initialized and fallback is disabled."""
 
 
-def deepagents_available() -> bool:
-    try:
-        __import__("deepagents")
-    except Exception:
-        return False
-    return True
+class RoundtableDeepAgentAdapter:
+    """Adapter that keeps DeepAgents optional and never starts background jobs."""
 
+    def __init__(self, fallback: RoundtableOrchestrator | None = None) -> None:
+        self._fallback = fallback or RoundtableOrchestrator()
 
-def run_with_deepagents_or_fallback(decision_prompt: str, personas: list[RoundtablePersona]) -> RoundtableResult:
-    """Run a request-scoped roundtable; fallback keeps v1 functional without background jobs."""
-    return run_roundtable(decision_prompt, personas)
+    def run(self, decision_prompt: str, personas: list[SelectedPersona]) -> RoundtableRunResult:
+        """Run inside the current request; fallback is deterministic when DeepAgents is unavailable."""
+        return self._fallback.run(decision_prompt, personas)
