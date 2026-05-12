@@ -51,12 +51,14 @@ async def test_create_user_duplicate_username(
 ) -> None:
     mock_user_repository.get_by_username = AsyncMock(return_value=MagicMock())
 
-    with pytest.raises(ValueError, match="already exists"):
-        with patch("backend.domain.service.user_service.current_username", return_value="admin"):
-            await user_service.create_user(
-                mock_session,
-                UserCreate(username="existing", display_name="Existing User"),
-            )
+    with (
+        pytest.raises(ValueError, match="已存在"),
+        patch("backend.domain.service.user_service.current_username", return_value="admin"),
+    ):
+        await user_service.create_user(
+            mock_session,
+            UserCreate(username="existing", display_name="Existing User"),
+        )
 
 
 @pytest.mark.asyncio

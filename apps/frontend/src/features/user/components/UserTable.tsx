@@ -21,6 +21,40 @@ export default function UserTable() {
   }
 
   const { data, isLoading } = useUsers(params)
+  const tableRows = (() => {
+    if (isLoading) {
+      return <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">加载中...</td></tr>
+    }
+
+    if (data?.content.length === 0) {
+      return <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">暂无用户数据</td></tr>
+    }
+
+    return data?.content.map((user) => (
+      <tr key={user.id} className="border-b last:border-0 hover:bg-gray-50">
+        <td className="px-4 py-3 font-medium">{user.username}</td>
+        <td className="px-4 py-3">{user.display_name}</td>
+        <td className="px-4 py-3 text-gray-500">{user.email ?? '-'}</td>
+        <td className="px-4 py-3"><UserStatusToggle user={user} /></td>
+        <td className="px-4 py-3">
+          <div className="flex gap-1">
+            {user.roles.map((role) => (
+              <span key={role} className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">{role}</span>
+            ))}
+          </div>
+        </td>
+        <td className="px-4 py-3 text-right">
+          <button
+            type="button"
+            onClick={() => deleteMutation.mutate(user.id)}
+            className="p-1 text-gray-400 hover:text-red-500"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </td>
+      </tr>
+    ))
+  })()
 
   return (
     <div className="space-y-4">
@@ -71,36 +105,7 @@ export default function UserTable() {
             </tr>
           </thead>
           <tbody>
-            {isLoading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">加载中...</td></tr>
-            ) : data?.content.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">暂无用户数据</td></tr>
-            ) : (
-              data?.content.map((user) => (
-                <tr key={user.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium">{user.username}</td>
-                  <td className="px-4 py-3">{user.display_name}</td>
-                  <td className="px-4 py-3 text-gray-500">{user.email ?? '-'}</td>
-                  <td className="px-4 py-3"><UserStatusToggle user={user} /></td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      {user.roles.map((role) => (
-                        <span key={role} className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">{role}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => deleteMutation.mutate(user.id)}
-                      className="p-1 text-gray-400 hover:text-red-500"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
+            {tableRows}
           </tbody>
         </table>
       </div>

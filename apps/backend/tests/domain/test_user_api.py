@@ -3,13 +3,13 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from core.database.session import db_session
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from backend.container import AppContainer
 from backend.domain.api import user_router
 from backend.domain.schema.user_schema import UserSchema
-from core.database.session import db_session
 
 
 @pytest.fixture

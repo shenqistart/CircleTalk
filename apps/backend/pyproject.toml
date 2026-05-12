@@ -15,6 +15,7 @@ dependencies = [
     "pydantic==2.12.5",
     "orjson==3.11.7",
     "pyyaml==6.0.3",
+    "pydantic-settings>=2.13,<3",
 ]
 
 [tool.uv.sources]
@@ -22,7 +23,7 @@ bedrock-core = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.400",
+    "pyright>=1.1.409",
     "pytest>=9.0",
     "pytest-asyncio>=0.25",
     "httpx>=0.28",

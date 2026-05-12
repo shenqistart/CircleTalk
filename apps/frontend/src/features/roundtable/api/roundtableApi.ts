@@ -10,7 +10,7 @@ import type {
   SelectedPersona,
 } from '@/features/roundtable/types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
+const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL ?? '/api')
 
 const demoPersonas: RoundtablePersona[] = [
   {
@@ -166,10 +166,10 @@ export const roundtableApi: RoundtableApiClient = {
     }
   },
 
-  async getSession(sessionId: string) {
+  getSession(sessionId: string) {
     if (sessionId.startsWith('mock-')) {
       const fallback = createMockSession({ decisionPrompt: '本地演示会话' })
-      return { ...fallback.session, id: sessionId }
+      return Promise.resolve({ ...fallback.session, id: sessionId })
     }
 
     return fetchJson<RoundtableSession>(`/roundtable/sessions/${sessionId}`)

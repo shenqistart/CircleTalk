@@ -9,8 +9,6 @@ from backend.domain.service.user_service import UserService
 class AppContainer(containers.DeclarativeContainer):
     """根 DI 容器，所有 provider 扁平注册，无子容器。"""
 
-    config = providers.Configuration()
-
     # --- Repository 层 ---
     user_repository = providers.Singleton(UserRepository)
 
