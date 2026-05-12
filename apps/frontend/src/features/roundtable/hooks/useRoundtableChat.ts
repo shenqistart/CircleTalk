@@ -33,10 +33,13 @@ export function useRoundtableChat() {
       }
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
-      while (true) {
+      let isComplete = false
+      while (!isComplete) {
         const { done, value } = await reader.read()
-        if (done) break
-        setStreamText((current) => current + decoder.decode(value, { stream: true }))
+        isComplete = done
+        if (value) {
+          setStreamText((current) => current + decoder.decode(value, { stream: true }))
+        }
       }
     } finally {
       setIsStreaming(false)
