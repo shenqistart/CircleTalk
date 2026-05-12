@@ -28,7 +28,7 @@ export function useRoundtableChat() {
     setStreamText('')
     try {
       const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, ...init })
-      if (!response.ok || !response.body) {
+      if (!response.ok) {
         throw new Error(`Text Stream failed: ${response.status}`)
       }
       const reader = response.body.getReader()

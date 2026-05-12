@@ -22,24 +22,9 @@ export function DecisionPromptForm({ isBusy, onCreate, onRecommend }: DecisionPr
         value={decisionPrompt}
         onChange={(event) => setDecisionPrompt(event.target.value)}
       />
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canSubmit}
-          type="button"
-          onClick={() => void onRecommend(decisionPrompt)}
-        >
-          自动推荐 3-5 位人物
-        </button>
-        <button
-          className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canSubmit}
-          type="button"
-          onClick={() => void onCreate(decisionPrompt)}
-        >
-          创建圆桌会话
-        </button>
-      </div>
-    </section>
+      <button disabled={(disabled ?? false) || !prompt.trim()} className="mt-3 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+        创建圆桌会话
+      </button>
+    </form>
   )
 }
