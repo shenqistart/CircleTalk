@@ -1,4 +1,4 @@
-"""Roundtable API schemas."""
+"""Roundtable request and response schemas."""
 
 from datetime import datetime
 from typing import Literal
@@ -7,12 +7,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 def to_camel(value: str) -> str:
-    parts = value.split("_")
-    return parts[0] + "".join(part.title() for part in parts[1:])
+    head, *tail = value.split("_")
+    return head + "".join(part.capitalize() for part in tail)
 
 
 class CamelModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)
 
 
 class RoundtablePersonaSchema(CamelModel):
@@ -32,11 +32,11 @@ class RoundtableMessageSchema(CamelModel):
     id: str
     role: Literal["moderator", "persona", "user", "system"]
     content: str
-    round_name: str
-    sequence: int
-    created_at: datetime
     persona_id: str | None = None
     persona_name: str | None = None
+    round_name: Literal["opening", "rebuttal", "closing", "synthesis", "follow_up", "system"]
+    sequence: int
+    created_at: datetime
 
 
 class DecisionArtifactSchema(CamelModel):
@@ -49,7 +49,7 @@ class DecisionArtifactSchema(CamelModel):
 class RoundtableSessionSchema(CamelModel):
     id: str
     decision_prompt: str
-    status: str
+    status: Literal["draft", "ready", "streaming", "completed", "error", "cancelled"]
     selected_personas: list[SelectedPersonaSchema]
     transcript: list[RoundtableMessageSchema]
     artifacts: DecisionArtifactSchema | None = None
@@ -59,7 +59,7 @@ class RoundtableSessionSchema(CamelModel):
 
 class CreateRoundtableSessionRequest(CamelModel):
     decision_prompt: str = Field(min_length=1, max_length=4000)
-    persona_ids: list[str] | None = Field(default=None, min_length=1)
+    persona_ids: list[str] | None = None
 
 
 class CreateRoundtableSessionResponse(CamelModel):
