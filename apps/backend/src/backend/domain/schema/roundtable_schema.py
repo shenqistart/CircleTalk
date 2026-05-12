@@ -1,4 +1,4 @@
-"""Roundtable request and response schemas."""
+"""Roundtable request/response schemas."""
 
 from datetime import datetime
 from typing import Literal
@@ -12,7 +12,7 @@ def to_camel(value: str) -> str:
 
 
 class CamelModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class RoundtablePersonaSchema(CamelModel):
@@ -32,11 +32,11 @@ class RoundtableMessageSchema(CamelModel):
     id: str
     role: Literal["moderator", "persona", "user", "system"]
     content: str
-    persona_id: str | None = None
-    persona_name: str | None = None
     round_name: Literal["opening", "rebuttal", "closing", "synthesis", "follow_up", "system"]
     sequence: int
     created_at: datetime
+    persona_id: str | None = None
+    persona_name: str | None = None
 
 
 class DecisionArtifactSchema(CamelModel):
@@ -59,7 +59,7 @@ class RoundtableSessionSchema(CamelModel):
 
 class CreateRoundtableSessionRequest(CamelModel):
     decision_prompt: str = Field(min_length=1, max_length=4000)
-    persona_ids: list[str] | None = None
+    persona_ids: list[str] = Field(default_factory=list)
 
 
 class CreateRoundtableSessionResponse(CamelModel):
