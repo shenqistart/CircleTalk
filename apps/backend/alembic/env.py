@@ -9,7 +9,7 @@ from backend.config.database_url import resolve_database_url
 from core.database.base import Base
 
 # 导入所有模型，确保 Alembic 能检测到
-from backend.database_url import resolve_database_url
+from backend.config.database_url import resolve_database_url
 from backend.domain.model.roundtable import (  # noqa: F401
     RoundtableArtifact,
     RoundtableMessage,
