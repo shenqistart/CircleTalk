@@ -27,6 +27,7 @@ export const sidebar = [
     items: [
       { text: '前端开发指南', link: '/frontend/development' },
       { text: '代码质量规范', link: '/frontend/code-quality' },
+      { text: '圆桌对话决策参谋', link: '/features-roundtable' },
       { text: 'Electron 桌面端开发指南', link: '/frontend/electron' },
     ],
   },

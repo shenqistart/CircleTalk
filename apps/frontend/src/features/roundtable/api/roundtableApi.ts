@@ -10,7 +10,7 @@ import type {
   SelectedPersona,
 } from '@/features/roundtable/types'
 
-const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL ?? '/api')
+const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 
 const demoPersonas: RoundtablePersona[] = [
   {
@@ -44,7 +44,8 @@ const demoPersonas: RoundtablePersona[] = [
 ]
 
 function apiUrl(path: string): string {
-  return `${API_BASE_URL}${path}`
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${API_BASE_URL}${normalizedPath}`
 }
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -117,16 +118,18 @@ function createDemoArtifact(selectedPersonas: SelectedPersona[]): DecisionArtifa
 }
 
 function createMockSession(input: CreateRoundtableSessionInput): CreateRoundtableSessionResult {
-  const selectedPersonas = (input.personaIds?.length ? demoPersonas.filter((persona) => input.personaIds?.includes(persona.id)) : demoPersonas.slice(0, 3)).map(
-    (persona, index) => toSelectedPersona(persona, index + 1, input.personaIds?.length ? 'manual' : 'auto'),
+  const hasManualSelection = Boolean(input.personaIds?.length)
+  const selectedPersonas = (hasManualSelection ? demoPersonas.filter((persona) => input.personaIds?.includes(persona.id)) : demoPersonas.slice(0, 3)).map(
+    (persona, index) => toSelectedPersona(persona, index + 1, hasManualSelection ? 'manual' : 'auto'),
   )
   const now = new Date().toISOString()
+  const sessionId = `mock-${Date.now()}`
   const session: RoundtableSession = {
-    id: `mock-${Date.now()}`,
+    id: sessionId,
     decisionPrompt: input.decisionPrompt,
     status: 'ready',
     selectedPersonas,
-    transcript: createDemoMessages(`mock-${Date.now()}`, input.decisionPrompt, selectedPersonas),
+    transcript: createDemoMessages(sessionId, input.decisionPrompt, selectedPersonas),
     artifacts: createDemoArtifact(selectedPersonas),
     createdAt: now,
     updatedAt: now,

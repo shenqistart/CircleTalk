@@ -36,10 +36,10 @@ bedrock/
 | 层 | 技术 |
 |----|------|
 | 后端 | Python 3.13+, FastAPI, SQLAlchemy 2.0 (async), dependency-injector, Alembic |
-| 前端 | React 19, TypeScript 5.9, Vite, Tailwind CSS 4.x, shadcn/ui, TanStack Query |
+| 前端 | React 19, TypeScript 5.9, Vite, Tailwind CSS 4.x, shadcn/ui, TanStack Query, AI SDK UI |
 | 数据库 | PostgreSQL (多租户 Schema 隔离), Redis, pgvector |
 | 存储 | MinIO (S3 兼容) |
-| AI | LangChain, LangGraph, 多供应商 LLM (OpenAI / DashScope / Ollama) |
+| AI | AI SDK Text Stream, DeepAgents, LangChain, LangGraph, 多供应商 LLM (OpenAI / DashScope / Ollama) |
 | 工具链 | pnpm (前端), uv (Python), Ruff, Pyright, ESLint |
 
 ## 快速启动
@@ -54,6 +54,13 @@ pnpm --filter @bedrock/frontend dev
 # 全栈
 pnpm dev
 ```
+
+
+## 圆桌对话决策参谋
+
+首版目标是实现“决策题 → 人物选择/推荐 → Opening/Rebuttal/Closing 多轮圆桌 → 主持人三件套 → follow-up”的闭环。专业栈边界：前端使用 AI SDK Text Stream，后端使用 FastAPI + `packages/llm` DeepAgents adapter，数据库使用 Render Postgres 持久化 session/transcript/artifacts。
+
+当前实现说明与验收清单见 [圆桌对话决策参谋文档](docs/features-roundtable.md)。
 
 ## 后端架构
 
