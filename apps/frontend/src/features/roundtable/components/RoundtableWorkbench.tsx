@@ -10,14 +10,15 @@ import { useRoundtableChat } from '@/features/roundtable/hooks/useRoundtableChat
 export default function RoundtableWorkbench() {
   const personaSelection = usePersonaSelection()
   const chat = useRoundtableChat()
+  const { refreshSession } = chat
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const sessionId = params.get('session')
     if (sessionId) {
-      void chat.refreshSession(sessionId)
+      void refreshSession(sessionId)
     }
-  }, [chat.refreshSession])
+  }, [refreshSession])
 
   async function handleRecommend(decisionPrompt: string): Promise<void> {
     await personaSelection.recommend(decisionPrompt)

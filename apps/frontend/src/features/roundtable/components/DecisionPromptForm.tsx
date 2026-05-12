@@ -2,16 +2,22 @@ import { useState } from 'react'
 
 interface DecisionPromptFormProps {
   isBusy: boolean
-  onCreate(decisionPrompt: string): Promise<void>
-  onRecommend(decisionPrompt: string): Promise<void>
+  onCreate: (decisionPrompt: string) => Promise<void>
+  onRecommend: (decisionPrompt: string) => Promise<void>
 }
 
 export function DecisionPromptForm({ isBusy, onCreate, onRecommend }: DecisionPromptFormProps) {
   const [decisionPrompt, setDecisionPrompt] = useState('')
   const canSubmit = decisionPrompt.trim().length > 0 && !isBusy
 
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!canSubmit) return
+    void onCreate(decisionPrompt.trim())
+  }
+
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" onSubmit={handleSubmit}>
       <div className="mb-3">
         <p className="text-sm font-semibold text-blue-700">Step 1 · 决策题</p>
         <h2 className="text-xl font-bold text-slate-950">输入要被圆桌讨论的真实问题</h2>
@@ -22,9 +28,23 @@ export function DecisionPromptForm({ isBusy, onCreate, onRecommend }: DecisionPr
         value={decisionPrompt}
         onChange={(event) => setDecisionPrompt(event.target.value)}
       />
-      <button disabled={(disabled ?? false) || !prompt.trim()} className="mt-3 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
-        创建圆桌会话
-      </button>
+      <div className="mt-3 flex flex-wrap gap-3">
+        <button
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!canSubmit}
+          type="button"
+          onClick={() => void onRecommend(decisionPrompt.trim())}
+        >
+          推荐人物
+        </button>
+        <button
+          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!canSubmit}
+          type="submit"
+        >
+          创建圆桌会话
+        </button>
+      </div>
     </form>
   )
 }

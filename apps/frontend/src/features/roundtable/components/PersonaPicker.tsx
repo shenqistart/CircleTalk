@@ -5,9 +5,9 @@ interface PersonaPickerProps {
   personas: RoundtablePersona[]
   recommendedPersonas: RoundtablePersona[]
   selectedPersonaIds: string[]
-  onClear(): void
-  onSelectAll(): void
-  onToggle(personaId: string): void
+  onClear: () => void
+  onSelectAll: () => void
+  onToggle: (personaId: string) => void
 }
 
 export function PersonaPicker({
@@ -28,10 +28,10 @@ export function PersonaPicker({
           <h2 className="text-xl font-bold text-slate-950">可手选 1 个到全部；不选则后端自动推荐</h2>
         </div>
         <div className="flex gap-2">
-          <button className="rounded-lg border px-3 py-1.5 text-xs" type="button" onClick={onSelectAll}>
+          <button className="rounded-lg border px-3 py-1.5 text-xs" type="button" onClick={() => onSelectAll()}>
             全选
           </button>
-          <button className="rounded-lg border px-3 py-1.5 text-xs" type="button" onClick={onClear}>
+          <button className="rounded-lg border px-3 py-1.5 text-xs" type="button" onClick={() => onClear()}>
             清空
           </button>
         </div>

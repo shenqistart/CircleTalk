@@ -1,8 +1,10 @@
 """Alembic 迁移环境，支持多租户 schema。"""
 
+import os
 from logging.config import fileConfig
 
 from alembic import context
+from core.config.loader import ConfigLoader
 from core.database.base import Base
 from sqlalchemy import create_engine
 
@@ -21,7 +23,7 @@ target_metadata = Base.metadata
 def get_url() -> str:
     app_config = ConfigLoader.load()
     tenant = os.environ.get("ALEMBIC_TENANT", "default")
-    return resolve_database_url(app_config, tenant=tenant)
+    return resolve_database_url(app_config, async_driver=False, tenant=tenant)
 
 
 def run_migrations_offline() -> None:

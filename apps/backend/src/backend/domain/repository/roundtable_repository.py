@@ -4,13 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import select
-
-if TYPE_CHECKING:
-    from llm.roundtable import DecisionArtifact, SelectedPersona
-    from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete, select
 
 from backend.domain.model.roundtable import (
     RoundtableArtifact,
@@ -20,49 +16,122 @@ from backend.domain.model.roundtable import (
     RoundtableSessionPersona,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from llm.roundtable import DecisionArtifact
+    from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class RoundtableRepository:
     """CRUD for sessions, personas, messages, and artifacts."""
 
-    async def upsert_personas(self, session: AsyncSession, personas: list[SelectedPersona]) -> None:
+    async def upsert_personas(self, session: AsyncSession, personas: Iterable[dict[str, object]]) -> None:
         for persona in personas:
-            existing = await session.get(RoundtablePersonaModel, persona.id)
+            persona_id = str(persona["id"])
+            existing = await session.get(RoundtablePersonaModel, persona_id)
             data = {
-                "skill_name": persona.skill_name,
-                "display_name": persona.display_name,
-                "source_url": persona.source_url,
-                "summary": persona.summary,
-                "prompt_json": {"prompt": persona.prompt},
-                "metadata_json": persona.metadata,
+                "skill_name": str(persona["skill_name"]),
+                "display_name": str(persona["display_name"]),
+                "source_url": str(persona["source_url"]) if persona.get("source_url") else None,
+                "summary": str(persona["summary"]),
+                "prompt_json": persona.get("prompt_json", {}),
+                "metadata_json": persona.get("metadata_json", {}),
             }
             if existing is None:
-                session.add(RoundtablePersonaModel(id=persona.id, **data))
+                session.add(RoundtablePersonaModel(id=persona_id, **data))
             else:
                 for key, value in data.items():
                     setattr(existing, key, value)
         await session.flush()
 
-    async def create_session(
+    async def list_personas(self, session: AsyncSession) -> list[RoundtablePersonaModel]:
+        result = await session.execute(select(RoundtablePersonaModel).order_by(RoundtablePersonaModel.display_name))
+        return list(result.scalars().all())
+
+    async def get_personas_by_ids(self, session: AsyncSession, persona_ids: list[str]) -> list[RoundtablePersonaModel]:
+        result = await session.execute(select(RoundtablePersonaModel).where(RoundtablePersonaModel.id.in_(persona_ids)))
+        rows = {row.id: row for row in result.scalars().all()}
+        return [rows[persona_id] for persona_id in persona_ids if persona_id in rows]
+
+    async def create_session(self, session: AsyncSession, decision_prompt: str) -> RoundtableSession:
+        model = RoundtableSession(
+            id=str(uuid.uuid4()),
+            decision_prompt=decision_prompt,
+            status="ready",
+            metadata_json={},
+        )
+        session.add(model)
+        await session.flush()
+        await session.refresh(model)
+        return model
+
+    async def replace_selected_personas(
         self,
         session: AsyncSession,
-        decision_prompt: str,
-        selected_personas: list[SelectedPersona],
-    ) -> RoundtableSession:
-        session_id = str(uuid.uuid4())
-        model = RoundtableSession(id=session_id, decision_prompt=decision_prompt, status="ready", metadata_json={})
-        session.add(model)
-        await self.upsert_personas(session, selected_personas)
-        session.add_all(
-            RoundtableSessionPersona(
-                id=str(uuid.uuid4()),
-                session_id=session_id,
-                persona_id=persona.id,
-                selection_source=persona.selection_source,
-                selection_reason=persona.selection_reason,
-                sequence=persona.sequence,
+        session_id: str,
+        selected: Iterable[dict[str, object]],
+    ) -> None:
+        await session.execute(delete(RoundtableSessionPersona).where(RoundtableSessionPersona.session_id == session_id))
+        rows: list[RoundtableSessionPersona] = []
+        for item in selected:
+            sequence_value = item["sequence"]
+            rows.append(
+                RoundtableSessionPersona(
+                    id=str(uuid.uuid4()),
+                    session_id=session_id,
+                    persona_id=str(item["persona_id"]),
+                    selection_source=str(item["selection_source"]),
+                    selection_reason=str(item["selection_reason"]) if item.get("selection_reason") else None,
+                    sequence=sequence_value if isinstance(sequence_value, int) else int(str(sequence_value)),
+                )
             )
-            for persona in selected_personas
+        session.add_all(rows)
+        await session.flush()
+
+    async def add_message(
+        self,
+        session: AsyncSession,
+        session_id: str,
+        *,
+        role: str,
+        content: str,
+        round_name: str,
+        sequence: int,
+        persona_id: str | None = None,
+        parent_message_id: str | None = None,
+    ) -> RoundtableMessage:
+        message = RoundtableMessage(
+            id=str(uuid.uuid4()),
+            session_id=session_id,
+            persona_id=persona_id,
+            role=role,
+            round_name=round_name,
+            parent_message_id=parent_message_id,
+            content=content,
+            sequence=sequence,
         )
+        session.add(message)
+        await session.flush()
+        await session.refresh(message)
+        return message
+
+    async def replace_artifact(
+        self,
+        session: AsyncSession,
+        session_id: str,
+        artifact: DecisionArtifact,
+    ) -> RoundtableArtifact:
+        await session.execute(delete(RoundtableArtifact).where(RoundtableArtifact.session_id == session_id))
+        model = RoundtableArtifact(
+            id=str(uuid.uuid4()),
+            session_id=session_id,
+            memo=artifact.memo,
+            recommendation=artifact.recommendation,
+            reasons_json=list(artifact.reasons),
+            debate_map_json=list(artifact.debate_map),
+        )
+        session.add(model)
         await session.flush()
         await session.refresh(model)
         return model
@@ -95,54 +164,6 @@ class RoundtableRepository:
         )
         return result.scalar_one_or_none()
 
-    async def replace_messages_and_artifact(
-        self,
-        session: AsyncSession,
-        session_id: str,
-        messages: list[dict[str, object]],
-        artifact: DecisionArtifact,
-    ) -> None:
-        existing = await self.list_messages(session, session_id)
-        next_sequence = len(existing) + 1
-        for offset, message in enumerate(messages):
-            session.add(
-                RoundtableMessage(
-                    id=str(uuid.uuid4()),
-                    session_id=session_id,
-                    persona_id=message.get("persona_id"),
-                    role=str(message["role"]),
-                    round_name=str(message["round_name"]),
-                    parent_message_id=message.get("parent_message_id"),
-                    content=str(message["content"]),
-                    sequence=next_sequence + offset,
-                )
-            )
-        session.add(
-            RoundtableArtifact(
-                id=str(uuid.uuid4()),
-                session_id=session_id,
-                memo=artifact.memo,
-                recommendation=artifact.recommendation,
-                reasons_json=artifact.reasons,
-                debate_map_json=artifact.debate_map,
-            )
-        )
-        await self.update_status(session, session_id, "completed")
-
-    async def append_follow_up(self, session: AsyncSession, session_id: str, content: str) -> None:
-        existing = await self.list_messages(session, session_id)
-        session.add(
-            RoundtableMessage(
-                id=str(uuid.uuid4()),
-                session_id=session_id,
-                role="moderator",
-                round_name="follow_up",
-                content=content,
-                sequence=len(existing) + 1,
-            )
-        )
-        await self.update_status(session, session_id, "completed")
-
     async def update_status(self, session: AsyncSession, session_id: str, status: str) -> None:
         model = await self.get_session(session, session_id)
         if model is None:
@@ -151,3 +172,18 @@ class RoundtableRepository:
         model.status = status
         model.updated_at = datetime.now(UTC)
         await session.flush()
+
+    async def snapshot(self, session: AsyncSession, session_id: str) -> dict[str, Any]:
+        model = await self.get_session(session, session_id)
+        if model is None:
+            msg = "roundtable session not found"
+            raise ValueError(msg)
+        selected = await self.list_session_personas(session, session_id)
+        persona_rows = await self.get_personas_by_ids(session, [item.persona_id for item in selected])
+        return {
+            "session": model,
+            "selected": selected,
+            "personas": {persona.id: persona for persona in persona_rows},
+            "messages": await self.list_messages(session, session_id),
+            "artifact": await self.get_latest_artifact(session, session_id),
+        }

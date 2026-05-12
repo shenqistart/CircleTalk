@@ -58,6 +58,11 @@ def load_personas() -> tuple[RoundtablePersona, ...]:
     return _DEFAULT_PERSONAS
 
 
+def load_default_personas() -> tuple[RoundtablePersona, ...]:
+    """Compatibility alias used by tests and callers."""
+    return load_personas()
+
+
 def validate_persona(raw: dict[str, object]) -> RoundtablePersona:
     """Convert a nuwa-skill-like dict into a RoundtablePersona."""
     required = ("id", "skill_name", "display_name", "summary", "prompt")
@@ -79,8 +84,6 @@ def validate_persona(raw: dict[str, object]) -> RoundtablePersona:
     )
 
 
-def load_default_personas(
-    seeds: Sequence[Mapping[str, object]] = PERSONA_SEEDS,
-) -> list[RoundtablePersona]:
-    """Load the built-in first-version persona pool."""
-    return [load_persona(seed) for seed in seeds]
+def load_persona(raw: dict[str, object]) -> RoundtablePersona:
+    """Compatibility alias for a single nuwa-skill-like persona."""
+    return validate_persona(raw)

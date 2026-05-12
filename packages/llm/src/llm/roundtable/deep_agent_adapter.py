@@ -31,6 +31,9 @@ class DeepAgentRoundtableAdapter:
 
     def run(
         self, decision_prompt: str, personas: list[SelectedPersona]
-    ) -> RoundtableRunResult:
+    ) -> RoundtableResult:
         """Run inside the current request; fallback is deterministic when DeepAgents is unavailable."""
         return self._fallback.run(decision_prompt, personas)
+
+
+RoundtableDeepAgentAdapter = DeepAgentRoundtableAdapter

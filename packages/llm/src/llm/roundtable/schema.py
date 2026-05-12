@@ -37,6 +37,22 @@ class SelectedPersona:
     sequence: int
     selection_reason: str | None = None
 
+    @property
+    def id(self) -> str:
+        return self.persona.id
+
+    @property
+    def display_name(self) -> str:
+        return self.persona.display_name
+
+    @property
+    def skill_name(self) -> str:
+        return self.persona.skill_name
+
+    @property
+    def summary(self) -> str:
+        return self.persona.summary
+
 
 @dataclass(frozen=True)
 class RoundtableMessage:

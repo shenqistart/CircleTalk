@@ -1,35 +1,49 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getRoundtableStreamUrl, roundtableApi } from '@/features/roundtable/api/roundtableApi'
-import type { RoundtableSession } from '@/features/roundtable/types'
+import type { CreateRoundtableSessionInput, RoundtableSession } from '@/features/roundtable/types'
+
+export const AI_SDK_TEXT_STREAM_PROTOCOL = 'text'
 
 export function useRoundtableChat() {
   const [session, setSession] = useState<RoundtableSession | null>(null)
   const [streamText, setStreamText] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [followUpQuestion, setFollowUpQuestion] = useState('')
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
 
-  const restoreSession = useCallback(async (sessionId: string) => {
+  const refreshSession = useCallback(async (sessionId: string) => {
     const restored = await roundtableApi.getSession(sessionId)
     setSession(restored)
     return restored
   }, [])
 
-  const createSession = useCallback(async (decisionPrompt: string, personaIds: string[]) => {
-    setError(null)
+  const createSession = useCallback(async (input: CreateRoundtableSessionInput) => {
+    setErrorMessage(null)
     setStreamText('')
-    const result = await roundtableApi.createSession({ decisionPrompt, personaIds: personaIds.length ? personaIds : undefined })
+    const result = await roundtableApi.createSession(input)
     setSession(result.session)
     window.history.replaceState(null, '', `/roundtable?session=${result.session.id}`)
     return result.session
   }, [])
 
   const consumeTextStream = useCallback(async (url: string, init?: RequestInit) => {
+    const controller = new AbortController()
+    setAbortController(controller)
     setIsStreaming(true)
     setStreamText('')
     try {
-      const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, ...init })
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        ...init,
+      })
       if (!response.ok) {
         throw new Error(`Text Stream failed: ${response.status}`)
+      }
+      if (!response.body) {
+        throw new Error('Text Stream response body is empty')
       }
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
@@ -42,6 +56,7 @@ export function useRoundtableChat() {
         }
       }
     } finally {
+      setAbortController(null)
       setIsStreaming(false)
     }
   }, [])
@@ -50,26 +65,47 @@ export function useRoundtableChat() {
     if (!session) return
     try {
       await consumeTextStream(getRoundtableStreamUrl(session.id))
-      await restoreSession(session.id)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '圆桌讨论失败')
+      await refreshSession(session.id)
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setErrorMessage(error instanceof Error ? error.message : '圆桌讨论失败')
+      }
     }
-  }, [consumeTextStream, restoreSession, session])
+  }, [consumeTextStream, refreshSession, session])
 
-  const sendFollowUp = useCallback(async (question: string) => {
-    if (!session) return
+  const submitFollowUp = useCallback(async () => {
+    if (!session || !followUpQuestion.trim()) return
     try {
-      await consumeTextStream(getRoundtableStreamUrl(session.id, true), { body: JSON.stringify({ question }) })
-      await restoreSession(session.id)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '追问失败')
+      await consumeTextStream(getRoundtableStreamUrl(session.id, true), { body: JSON.stringify({ question: followUpQuestion.trim() }) })
+      setFollowUpQuestion('')
+      await refreshSession(session.id)
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setErrorMessage(error instanceof Error ? error.message : '追问失败')
+      }
     }
-  }, [consumeTextStream, restoreSession, session])
+  }, [consumeTextStream, followUpQuestion, refreshSession, session])
+
+  const abort = useCallback(() => {
+    abortController?.abort()
+  }, [abortController])
 
   useEffect(() => {
     const sessionId = new URLSearchParams(window.location.search).get('session')
-    if (sessionId) void restoreSession(sessionId).catch(() => undefined)
-  }, [restoreSession])
+    if (sessionId) void refreshSession(sessionId).catch(() => undefined)
+  }, [refreshSession])
 
-  return { session, streamText, isStreaming, error, createSession, startDiscussion, sendFollowUp, restoreSession }
+  return {
+    abort,
+    createSession,
+    errorMessage,
+    followUpQuestion,
+    isStreaming,
+    refreshSession,
+    session,
+    setFollowUpQuestion,
+    startDiscussion,
+    streamText,
+    submitFollowUp,
+  }
 }

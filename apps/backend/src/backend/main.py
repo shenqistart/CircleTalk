@@ -19,7 +19,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from backend.config.database_url import resolve_database_url
 from backend.container import AppContainer
-from backend.config.database_url import resolve_database_url
 from backend.domain.api import roundtable_router, user_router
 
 logger = logging.getLogger(__name__)
