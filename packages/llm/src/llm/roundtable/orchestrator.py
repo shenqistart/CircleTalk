@@ -3,34 +3,28 @@
 from collections.abc import Iterable
 
 from llm.roundtable.prompts import ROUND_SEQUENCE
-from llm.roundtable.schema import DecisionArtifact, RoundName, RoundtableMessage, RoundtableResult, SelectedPersona
+from llm.roundtable.schema import (
+    DecisionArtifact,
+    RoundtableMessage,
+    RoundtableRunResult,
+    SelectedPersona,
+)
 
 
-def _persona_line(persona: SelectedPersona, round_name: RoundName, decision_prompt: str) -> str:
-    name = persona.persona.display_name
-    summary = persona.persona.summary
-    match round_name:
-        case RoundName.OPENING:
-            return f"{name}：我先看目标与不可逆风险。针对“{decision_prompt}”，建议先把成功标准和停止条件写清楚。{summary}"
-        case RoundName.REBUTTAL:
-            return f"{name}：回应其他观点，我会追问哪些建议只是在转移风险；若要推进，应先做低成本验证。"
-        case RoundName.CLOSING:
-            return f"{name}：修正后的最终判断是保留选择权，先小步试点，再根据真实反馈扩大投入。"
-        case _:
-            return f"{name}：继续围绕该问题补充判断。"
+def _persona_line(
+    persona: SelectedPersona, decision_prompt: str, round_name: str
+) -> str:
+    if round_name == "opening":
+        return f"{persona.display_name}：我的核心判断是先澄清「{decision_prompt}」的目标和不可承受风险，再推进最小可逆行动。"
+    if round_name == "rebuttal":
+        return f"{persona.display_name}：我回应其他观点：若只看单一视角会遗漏{persona.summary}，因此需要把反方风险纳入决策门槛。"
+    return f"{persona.display_name}：修正后的最终判断是保留选择权，先做小规模验证，并设置清晰停止条件。"
 
 
-def synthesize(decision_prompt: str, selected_personas: Iterable[SelectedPersona]) -> DecisionArtifact:
-    """Create the required memo/recommendation/reasons/debate_map artifact."""
-    personas = list(selected_personas)
-    debate_map = tuple(
-        {
-            "personaName": persona.persona.display_name,
-            "position": "先识别关键假设，再用可逆试点验证。",
-            "keyConcern": persona.selection_reason or persona.persona.summary,
-        }
-        for persona in personas
-    )
+def synthesize(
+    decision_prompt: str, personas: Iterable[SelectedPersona]
+) -> DecisionArtifact:
+    persona_list = list(personas)
     return DecisionArtifact(
         memo=f"围绕“{decision_prompt}”，圆桌共识是不要直接押注单一路径，而是先澄清目标、约束、失败信号与试点边界。",
         recommendation="建议启动一个短周期、低成本、可回滚的试点；同时设定继续、暂停、放弃三个阈值。",
@@ -42,8 +36,14 @@ def synthesize(decision_prompt: str, selected_personas: Iterable[SelectedPersona
 class RoundtableOrchestrator:
     """Request-scoped orchestrator; no background jobs or long-term memory."""
 
-    async def run(self, decision_prompt: str, selected_personas: list[SelectedPersona]) -> RoundtableResult:
-        messages: list[RoundtableMessage] = []
+    def run(
+        self, decision_prompt: str, personas: list[SelectedPersona]
+    ) -> RoundtableRunResult:
+        messages: list[RoundtableMessage] = [
+            RoundtableMessage(
+                role="user", content=decision_prompt, round_name="system"
+            ),
+        ]
         for round_name in ROUND_SEQUENCE:
             for selected in selected_personas:
                 messages.append(

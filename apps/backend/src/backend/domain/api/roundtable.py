@@ -93,4 +93,6 @@ async def stream_follow_up(
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
     session: Annotated[AsyncSession, Depends(db_session)],
 ) -> StreamingResponse:
-    return StreamingResponse(service.follow_up(session, session_id, request.question), media_type="text/plain; charset=utf-8")
+    return StreamingResponse(
+        service.follow_up(session, session_id, request.question), media_type="text/plain; charset=utf-8"
+    )

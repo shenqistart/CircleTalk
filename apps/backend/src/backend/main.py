@@ -17,8 +17,8 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from backend.config.database_url import resolve_database_url
 from backend.container import AppContainer
-from backend.database_url import resolve_database_url
 from backend.domain.api import roundtable_router, user_router
 
 logger = logging.getLogger(__name__)

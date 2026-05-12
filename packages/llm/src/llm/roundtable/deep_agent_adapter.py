@@ -29,7 +29,8 @@ class DeepAgentRoundtableAdapter:
     def __init__(self, fallback: RoundtableOrchestrator | None = None) -> None:
         self._fallback = fallback or RoundtableOrchestrator()
 
-    async def run_discussion(self, decision_prompt: str, selected_personas: list[SelectedPersona]) -> RoundtableResult:
-        # The first version deliberately avoids background jobs. Until a provider-backed
-        # DeepAgents graph is configured, the fallback preserves the same domain contract.
-        return await self._fallback.run(decision_prompt, selected_personas)
+    def run(
+        self, decision_prompt: str, personas: list[SelectedPersona]
+    ) -> RoundtableRunResult:
+        """Run inside the current request; fallback is deterministic when DeepAgents is unavailable."""
+        return self._fallback.run(decision_prompt, personas)

@@ -79,11 +79,8 @@ def validate_persona(raw: dict[str, object]) -> RoundtablePersona:
     )
 
 
-def get_personas_by_ids(persona_ids: list[str], personas: tuple[RoundtablePersona, ...] | None = None) -> list[RoundtablePersona]:
-    """Resolve persona ids preserving caller order."""
-    catalog = {persona.id: persona for persona in (personas or load_personas())}
-    missing = [persona_id for persona_id in persona_ids if persona_id not in catalog]
-    if missing:
-        msg = f"unknown persona ids: {', '.join(missing)}"
-        raise ValueError(msg)
-    return [catalog[persona_id] for persona_id in persona_ids]
+def load_default_personas(
+    seeds: Sequence[Mapping[str, object]] = PERSONA_SEEDS,
+) -> list[RoundtablePersona]:
+    """Load the built-in first-version persona pool."""
+    return [load_persona(seed) for seed in seeds]

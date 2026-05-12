@@ -9,6 +9,9 @@ export function AppLayout() {
           <a href="/users" className="block px-3 py-2 rounded-lg hover:bg-gray-100 text-sm font-medium">
             用户管理
           </a>
+          <a href="/roundtable" className="block px-3 py-2 rounded-lg hover:bg-gray-100 text-sm font-medium">
+            圆桌对话
+          </a>
         </nav>
       </aside>
       <main className="flex-1 overflow-auto p-6">

@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
-from llm.roundtable import DecisionArtifact, SelectedPersona
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+
+if TYPE_CHECKING:
+    from llm.roundtable import DecisionArtifact, SelectedPersona
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain.model.roundtable import (
     RoundtableArtifact,

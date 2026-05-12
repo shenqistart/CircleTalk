@@ -1,138 +1,72 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getRoundtableStreamUrl, roundtableApi } from '@/features/roundtable/api/roundtableApi'
-import type { CreateRoundtableSessionInput, RoundtableSession } from '@/features/roundtable/types'
-
-export const AI_SDK_TEXT_STREAM_PROTOCOL = 'text' as const
-
-async function readTextStream(response: Response, onText: (text: string) => void): Promise<void> {
-  if (!response.ok) {
-    throw new Error(`Text Stream request failed: ${response.status}`)
-  }
-  const reader = response.body?.getReader()
-  if (!reader) {
-    return
-  }
-  const decoder = new TextDecoder()
-  let done = false
-  while (!done) {
-    const result = await reader.read()
-    done = result.done
-    if (result.value) {
-      onText(decoder.decode(result.value, { stream: !done }))
-    }
-  }
-}
+import type { RoundtableSession } from '@/features/roundtable/types'
 
 export function useRoundtableChat() {
   const [session, setSession] = useState<RoundtableSession | null>(null)
   const [streamText, setStreamText] = useState('')
-  const [followUpQuestion, setFollowUpQuestion] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const abortRef = useRef<AbortController | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const refreshSession = useCallback(async (sessionId: string) => {
+  const restoreSession = useCallback(async (sessionId: string) => {
     const restored = await roundtableApi.getSession(sessionId)
     setSession(restored)
     return restored
   }, [])
 
-  const createSession = useCallback(async (input: CreateRoundtableSessionInput) => {
-    setErrorMessage(null)
+  const createSession = useCallback(async (decisionPrompt: string, personaIds: string[]) => {
+    setError(null)
     setStreamText('')
-    const result = await roundtableApi.createSession(input)
+    const result = await roundtableApi.createSession({ decisionPrompt, personaIds: personaIds.length ? personaIds : undefined })
     setSession(result.session)
-    window.history.replaceState(null, '', `/roundtable?session=${encodeURIComponent(result.session.id)}`)
-    return result
+    window.history.replaceState(null, '', `/roundtable?session=${result.session.id}`)
+    return result.session
+  }, [])
+
+  const consumeTextStream = useCallback(async (url: string, init?: RequestInit) => {
+    setIsStreaming(true)
+    setStreamText('')
+    try {
+      const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, ...init })
+      if (!response.ok || !response.body) {
+        throw new Error(`Text Stream failed: ${response.status}`)
+      }
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        setStreamText((current) => current + decoder.decode(value, { stream: true }))
+      }
+    } finally {
+      setIsStreaming(false)
+    }
   }, [])
 
   const startDiscussion = useCallback(async () => {
-    if (!session) {
-      return
-    }
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
-    setIsStreaming(true)
-    setErrorMessage(null)
-    setStreamText('')
+    if (!session) return
     try {
-      await readTextStream(
-        await fetch(getRoundtableStreamUrl(session.id), {
-          method: 'POST',
-          headers: {
-            Accept: 'text/plain',
-            'X-AI-SDK-Stream-Protocol': AI_SDK_TEXT_STREAM_PROTOCOL,
-          },
-          signal: controller.signal,
-        }),
-        (chunk) => setStreamText((current) => `${current}${chunk}`),
-      )
-      await refreshSession(session.id)
-    } catch (error: unknown) {
-      if (!controller.signal.aborted) {
-        setErrorMessage(error instanceof Error ? error.message : '圆桌流式生成失败')
-        await refreshSession(session.id)
-      }
-    } finally {
-      if (!controller.signal.aborted) {
-        setIsStreaming(false)
-      }
+      await consumeTextStream(getRoundtableStreamUrl(session.id))
+      await restoreSession(session.id)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '圆桌讨论失败')
     }
-  }, [refreshSession, session])
+  }, [consumeTextStream, restoreSession, session])
 
-  const submitFollowUp = useCallback(async () => {
-    if (!session || !followUpQuestion.trim()) {
-      return
-    }
-    const controller = new AbortController()
-    abortRef.current = controller
-    setIsStreaming(true)
-    setErrorMessage(null)
-    setStreamText('')
+  const sendFollowUp = useCallback(async (question: string) => {
+    if (!session) return
     try {
-      await readTextStream(
-        await fetch(getRoundtableStreamUrl(session.id, true), {
-          method: 'POST',
-          headers: {
-            Accept: 'text/plain',
-            'Content-Type': 'application/json',
-            'X-AI-SDK-Stream-Protocol': AI_SDK_TEXT_STREAM_PROTOCOL,
-          },
-          body: JSON.stringify({ question: followUpQuestion }),
-          signal: controller.signal,
-        }),
-        (chunk) => setStreamText((current) => `${current}${chunk}`),
-      )
-      setFollowUpQuestion('')
-      await refreshSession(session.id)
-    } catch (error: unknown) {
-      if (!controller.signal.aborted) {
-        setErrorMessage(error instanceof Error ? error.message : '追问失败')
-      }
-    } finally {
-      if (!controller.signal.aborted) {
-        setIsStreaming(false)
-      }
+      await consumeTextStream(getRoundtableStreamUrl(session.id, true), { body: JSON.stringify({ question }) })
+      await restoreSession(session.id)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '追问失败')
     }
-  }, [followUpQuestion, refreshSession, session])
+  }, [consumeTextStream, restoreSession, session])
 
-  const abort = useCallback(() => {
-    abortRef.current?.abort()
-    setIsStreaming(false)
-  }, [])
+  useEffect(() => {
+    const sessionId = new URLSearchParams(window.location.search).get('session')
+    if (sessionId) void restoreSession(sessionId).catch(() => undefined)
+  }, [restoreSession])
 
-  return {
-    abort,
-    createSession,
-    errorMessage,
-    followUpQuestion,
-    isStreaming,
-    refreshSession,
-    session,
-    setFollowUpQuestion,
-    startDiscussion,
-    streamText,
-    submitFollowUp,
-  }
+  return { session, streamText, isStreaming, error, createSession, startDiscussion, sendFollowUp, restoreSession }
 }

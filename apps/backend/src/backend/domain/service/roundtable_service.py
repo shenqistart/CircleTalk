@@ -42,16 +42,8 @@ class RoundtableService:
         session: AsyncSession,
         request: CreateRoundtableSessionRequest,
     ) -> CreateRoundtableSessionResponse:
-        await self.seed_personas(session)
-        selected = select_personas(request.decision_prompt, request.persona_ids)
-        created = await self._repository.create_session(session, request.decision_prompt)
-        await self._repository.add_message(
-            session,
-            created.id,
-            role="user",
-            content=request.decision_prompt,
-            round_name="system",
-            sequence=1,
+        selected = (
+            select_manual_personas(persona_ids, self.personas()) if persona_ids else self.recommend(decision_prompt)
         )
         await self._repository.replace_selected_personas(session, created.id, [_selected_to_row(item) for item in selected])
         restored = await self._must_get_session(session, created.id)
@@ -115,6 +107,16 @@ class RoundtableService:
             raise ValueError(msg)
         return restored
 
+    async def follow_up(self, db: AsyncSession, session_id: str, question: str) -> AsyncIterator[str]:
+        selected = await self._selected_personas(db, session_id)
+        messages = await self._repository.list_messages(db, session_id)
+        artifact_model = await self._repository.get_latest_artifact(db, session_id)
+        artifact = self._artifact_from_model(artifact_model) if artifact_model else None
+        response = self._agent._fallback.follow_up(
+            question, selected, [message.content for message in messages], artifact
+        )
+        await self._repository.append_follow_up(db, session_id, response.content)
+        yield response.content
 
 def _persona_to_seed(persona: LlmPersona) -> dict[str, object]:
     return {
@@ -222,18 +224,37 @@ def _session_schema(session: RoundtableSession) -> RoundtableSessionSchema:
             selection_source=item.selection_source,  # type: ignore[arg-type]
             sequence=item.sequence,
         )
-        for item in selected_rows
-    ]
-    persona_name_by_id = {item.persona.id: item.persona.display_name for item in selected_rows}
-    messages = [_message_schema(row, persona_name_by_id) for row in sorted(session.messages, key=lambda item: item.sequence)]
-    artifact = _artifact_schema(sorted(session.artifacts, key=lambda item: item.created_at)[-1]) if session.artifacts else None
-    return RoundtableSessionSchema(
-        id=session.id,
-        decision_prompt=session.decision_prompt,
-        status=session.status,
-        selected_personas=selected,
-        transcript=messages,
-        artifacts=artifact,
-        created_at=session.created_at,
-        updated_at=session.updated_at,
-    )
+
+    def _selected_schema(self, persona: SelectedPersona) -> SelectedPersonaSchema:
+        return SelectedPersonaSchema(
+            **self._persona_schema(persona).model_dump(),
+            selection_source=persona.selection_source,
+            sequence=persona.sequence,
+        )
+
+    def _message_schema(self, message: RoundtableMessage) -> RoundtableMessageSchema:
+        return RoundtableMessageSchema(
+            id=message.id,
+            role=message.role,
+            content=message.content,
+            round_name=message.round_name,
+            sequence=message.sequence,
+            created_at=message.created_at,
+            persona_id=message.persona_id,
+        )
+
+    def _artifact_schema(self, artifact: RoundtableArtifact) -> DecisionArtifactSchema:
+        return DecisionArtifactSchema(
+            memo=artifact.memo,
+            recommendation=artifact.recommendation,
+            reasons=artifact.reasons_json,
+            debate_map=artifact.debate_map_json,
+        )
+
+    def _artifact_from_model(self, artifact: RoundtableArtifact) -> DecisionArtifact:
+        return DecisionArtifact(
+            memo=artifact.memo,
+            recommendation=artifact.recommendation,
+            reasons=artifact.reasons_json,
+            debate_map=artifact.debate_map_json,
+        )
