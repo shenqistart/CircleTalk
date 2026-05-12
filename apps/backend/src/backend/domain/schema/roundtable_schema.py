@@ -5,6 +5,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+type RoundtableSessionStatus = Literal["draft", "ready", "streaming", "completed", "error", "cancelled"]
+type PersonaSelectionSource = Literal["auto", "manual"]
+type RoundtableMessageRole = Literal["moderator", "persona", "user", "system"]
+type RoundtableRoundName = Literal["opening", "rebuttal", "closing", "synthesis", "follow_up", "system"]
+
 
 def to_camel(value: str) -> str:
     head, *tail = value.split("_")
@@ -24,15 +29,15 @@ class RoundtablePersonaSchema(CamelModel):
 
 
 class SelectedPersonaSchema(RoundtablePersonaSchema):
-    selection_source: Literal["auto", "manual"]
+    selection_source: PersonaSelectionSource
     sequence: int
 
 
 class RoundtableMessageSchema(CamelModel):
     id: str
-    role: Literal["moderator", "persona", "user", "system"]
+    role: RoundtableMessageRole
     content: str
-    round_name: Literal["opening", "rebuttal", "closing", "synthesis", "follow_up", "system"]
+    round_name: RoundtableRoundName
     sequence: int
     created_at: datetime
     persona_id: str | None = None
@@ -49,7 +54,7 @@ class DecisionArtifactSchema(CamelModel):
 class RoundtableSessionSchema(CamelModel):
     id: str
     decision_prompt: str
-    status: Literal["draft", "ready", "streaming", "completed", "error", "cancelled"]
+    status: RoundtableSessionStatus
     selected_personas: list[SelectedPersonaSchema]
     transcript: list[RoundtableMessageSchema]
     artifacts: DecisionArtifactSchema | None = None

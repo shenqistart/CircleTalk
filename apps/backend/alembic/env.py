@@ -3,21 +3,12 @@
 from logging.config import fileConfig
 
 from alembic import context
+from core.database.base import Base
 from sqlalchemy import create_engine
 
-from backend.config.database_url import resolve_database_url
-from core.database.base import Base
-
 # 导入所有模型，确保 Alembic 能检测到
+import backend.domain.model.roundtable as roundtable_models  # noqa: F401
 from backend.config.database_url import resolve_database_url
-from backend.domain.model.roundtable import (  # noqa: F401
-    RoundtableArtifact,
-    RoundtableMessage,
-    RoundtablePersona,
-    RoundtableSession,
-    RoundtableSessionPersona,
-    RoundtableTechnicalConfirmation,
-)
 from backend.domain.model.user import User  # noqa: F401
 
 config = context.config

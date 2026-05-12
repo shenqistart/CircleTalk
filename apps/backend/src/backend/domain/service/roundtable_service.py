@@ -1,6 +1,7 @@
 """Roundtable application service."""
 
 from collections.abc import AsyncIterator
+from typing import cast
 
 from llm.roundtable import RoundtableOrchestrator, load_personas, recommend_personas, select_personas
 from llm.roundtable.schema import DecisionArtifact, RoundtablePersona as LlmPersona, SelectedPersona
@@ -12,9 +13,13 @@ from backend.domain.schema.roundtable_schema import (
     CreateRoundtableSessionRequest,
     CreateRoundtableSessionResponse,
     DecisionArtifactSchema,
+    PersonaSelectionSource,
+    RoundtableMessageRole,
     RoundtableMessageSchema,
     RoundtablePersonaSchema,
+    RoundtableRoundName,
     RoundtableSessionSchema,
+    RoundtableSessionStatus,
     SelectedPersonaSchema,
 )
 
@@ -129,53 +134,24 @@ def _persona_to_seed(persona: LlmPersona) -> dict[str, object]:
         "metadata_json": {"perspective_tags": list(persona.perspective_tags)},
     }
 
-
-def _selected_to_row(item: SelectedPersona) -> dict[str, object]:
-    return {
-        "persona_id": item.persona.id,
-        "selection_source": item.selection_source,
-        "selection_reason": item.selection_reason,
-        "sequence": item.sequence,
-    }
-
-
-def _persona_schema(row: RoundtablePersona) -> RoundtablePersonaSchema:
-    return RoundtablePersonaSchema(
-        id=row.id,
-        display_name=row.display_name,
-        skill_name=row.skill_name,
-        summary=row.summary,
-    )
-
-
-def _selected_persona_schema(item: SelectedPersona) -> SelectedPersonaSchema:
-    return SelectedPersonaSchema(
-        id=item.persona.id,
-        display_name=item.persona.display_name,
-        skill_name=item.persona.skill_name,
-        summary=item.persona.summary,
-        selection_reason=item.selection_reason,
-        selection_source=item.selection_source,  # type: ignore[arg-type]
-        sequence=item.sequence,
-    )
-
-
-def _selected_from_session(session: RoundtableSession) -> list[SelectedPersona]:
-    personas = sorted(session.personas, key=lambda item: item.sequence)
-    return [
-        SelectedPersona(
-            persona=LlmPersona(
-                id=item.persona.id,
-                skill_name=item.persona.skill_name,
-                display_name=item.persona.display_name,
-                summary=item.persona.summary,
-                prompt=str(item.persona.prompt_json.get("system", item.persona.summary)),
-                source_url=item.persona.source_url,
-                selection_reason=item.selection_reason,
-            ),
-            selection_source=item.selection_source,
-            sequence=item.sequence,
-            selection_reason=item.selection_reason,
+    async def _build_session_schema(
+        self,
+        db: AsyncSession,
+        model: RoundtableSession,
+        selected_personas: list[SelectedPersona] | None = None,
+    ) -> RoundtableSessionSchema:
+        selected = selected_personas or await self._selected_personas(db, model.id)
+        messages = await self._repository.list_messages(db, model.id)
+        artifact = await self._repository.get_latest_artifact(db, model.id)
+        return RoundtableSessionSchema(
+            id=model.id,
+            decision_prompt=model.decision_prompt,
+            status=cast("RoundtableSessionStatus", model.status),
+            selected_personas=[self._selected_schema(persona) for persona in selected],
+            transcript=[self._message_schema(message) for message in messages],
+            artifacts=self._artifact_schema(artifact) if artifact else None,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
         )
         for item in personas
     ]
@@ -228,16 +204,16 @@ def _session_schema(session: RoundtableSession) -> RoundtableSessionSchema:
     def _selected_schema(self, persona: SelectedPersona) -> SelectedPersonaSchema:
         return SelectedPersonaSchema(
             **self._persona_schema(persona).model_dump(),
-            selection_source=persona.selection_source,
+            selection_source=cast("PersonaSelectionSource", persona.selection_source),
             sequence=persona.sequence,
         )
 
     def _message_schema(self, message: RoundtableMessage) -> RoundtableMessageSchema:
         return RoundtableMessageSchema(
             id=message.id,
-            role=message.role,
+            role=cast("RoundtableMessageRole", message.role),
             content=message.content,
-            round_name=message.round_name,
+            round_name=cast("RoundtableRoundName", message.round_name),
             sequence=message.sequence,
             created_at=message.created_at,
             persona_id=message.persona_id,

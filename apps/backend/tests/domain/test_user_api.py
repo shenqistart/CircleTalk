@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import pytest_asyncio
 from core.database.session import db_session
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
@@ -22,7 +23,7 @@ def mock_session() -> AsyncMock:
     return AsyncMock()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client(mock_user_service: MagicMock, mock_session: AsyncMock):
     """创建不带生命周期的测试应用（无需真实数据库）。"""
     test_app = FastAPI()
