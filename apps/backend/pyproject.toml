@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "bedrock-core",
+    "bedrock-llm",
     "fastapi==0.135.1",
     "uvicorn[standard]==0.41.0",
     "sqlalchemy==2.0.48",
@@ -20,6 +21,7 @@ dependencies = [
 
 [tool.uv.sources]
 bedrock-core = { workspace = true }
+bedrock-llm = { workspace = true }
 
 [dependency-groups]
 dev = [
