@@ -1,38 +1,58 @@
 import type { RoundtablePersona } from '@/features/roundtable/types'
 
-export function PersonaPicker({ personas, selectedIds, onToggle, onSelectAll, onClear }: {
+interface PersonaPickerProps {
+  isLoading: boolean
   personas: RoundtablePersona[]
-  selectedIds: string[]
-  onToggle: (id: string) => void
-  onSelectAll: () => void
-  onClear: () => void
-}) {
+  recommendedPersonas: RoundtablePersona[]
+  selectedPersonaIds: string[]
+  onClear(): void
+  onSelectAll(): void
+  onToggle(personaId: string): void
+}
+
+export function PersonaPicker({
+  isLoading,
+  onClear,
+  onSelectAll,
+  onToggle,
+  personas,
+  recommendedPersonas,
+  selectedPersonaIds,
+}: PersonaPickerProps) {
+  const recommendedIds = new Set(recommendedPersonas.map((persona) => persona.id))
   return (
-    <section className="rounded-2xl border bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold">人物选择</h2>
-          <p className="text-sm text-gray-500">不选择时系统自动推荐 3-5 位；手动选择会优先保留。</p>
+          <p className="text-sm font-semibold text-blue-700">Step 2 · 人物选择</p>
+          <h2 className="text-xl font-bold text-slate-950">可手选 1 个到全部；不选则后端自动推荐</h2>
         </div>
-        <div className="flex gap-2 text-sm">
-          <button type="button" onClick={onSelectAll} className="rounded-lg border px-3 py-1">全选</button>
-          <button type="button" onClick={onClear} className="rounded-lg border px-3 py-1">自动推荐</button>
+        <div className="flex gap-2">
+          <button className="rounded-lg border px-3 py-1.5 text-xs" type="button" onClick={onSelectAll}>
+            全选
+          </button>
+          <button className="rounded-lg border px-3 py-1.5 text-xs" type="button" onClick={onClear}>
+            清空
+          </button>
         </div>
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      {isLoading ? <p className="text-sm text-slate-500">人物加载中...</p> : null}
+      <div className="grid gap-3 md:grid-cols-2">
         {personas.map((persona) => {
-          const checked = selectedIds.includes(persona.id)
+          const checked = selectedPersonaIds.includes(persona.id)
           return (
-            <button
+            <label
+              className={`cursor-pointer rounded-xl border p-4 transition ${checked ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}
               key={persona.id}
-              type="button"
-              onClick={() => onToggle(persona.id)}
-              className={`rounded-xl border p-4 text-left transition ${checked ? 'border-gray-900 bg-gray-900 text-white' : 'bg-white hover:bg-gray-50'}`}
             >
-              <div className="font-medium">{persona.displayName}</div>
-              <div className={`mt-1 text-sm ${checked ? 'text-gray-200' : 'text-gray-500'}`}>{persona.summary}</div>
-              {persona.selectionReason && <div className={`mt-2 text-xs ${checked ? 'text-gray-300' : 'text-gray-400'}`}>{persona.selectionReason}</div>}
-            </button>
+              <input checked={checked} className="sr-only" type="checkbox" onChange={() => onToggle(persona.id)} />
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-semibold text-slate-950">{persona.displayName}</h3>
+                {recommendedIds.has(persona.id) ? <span className="rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-800">推荐</span> : null}
+              </div>
+              <p className="mt-2 text-sm text-slate-600">{persona.summary}</p>
+              {persona.selectionReason ? <p className="mt-2 text-xs text-blue-700">{persona.selectionReason}</p> : null}
+            </label>
           )
         })}
       </div>

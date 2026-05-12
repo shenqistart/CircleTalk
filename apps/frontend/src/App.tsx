@@ -9,7 +9,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<AppLayout />}>
-            <Route path="/" element={<Navigate to="/users" replace />} />
+            <Route path="/" element={<Navigate to="/roundtable" replace />} />
             <Route path="/users/*" element={<UserRoutes />} />
             <Route path="/roundtable" element={<RoundtableRoutes />} />
           </Route>

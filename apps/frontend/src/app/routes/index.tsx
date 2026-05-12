@@ -9,6 +9,7 @@ export function UserRoutes() {
     <Suspense fallback={<div className="text-center py-8">加载中...</div>}>
       <Routes>
         <Route index element={<UserListPage />} />
+        <Route path="/roundtable" element={<RoundtableWorkbench />} />
       </Routes>
     </Suspense>
   )
