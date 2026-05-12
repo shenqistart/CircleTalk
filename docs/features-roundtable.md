@@ -40,11 +40,10 @@
 
 ## 当前代码质量审查记录
 
-- `apps/frontend/src/features/roundtable/api/roundtableApi.ts` 已提供本地 demo fallback，仅用于后端未就绪时的本地 UI 联调；验收、回归和部署 smoke 必须连接真实 backend/DB/stream，不能用 fallback 结果替代。
+- `apps/frontend/src/features/roundtable/api/roundtableApi.ts` 已提供本地 demo fallback，适合后端未就绪时做 UI 联调；fallback 需要保持与真实 API schema 一致，避免 UI 误依赖 mock-only 字段。
 - API base URL 统一去除结尾 `/`，请求 path 统一补前导 `/`，避免 `VITE_API_BASE_URL` 配置为 `https://api.example.com/` 时生成双斜杠 URL。
 - mock session 只生成一次 `sessionId` 并复用于 transcript message id，保证刷新/恢复调试时 id 关系稳定。
 - 当前 worktree 只包含 roundtable frontend API/types；backend roundtable domain、LLM roundtable package、migration、AI SDK hook/components 尚未出现在本工作树，不能宣称端到端完成。
-- 评审发现当前前端还缺少 roundtable 页面挂载、AI SDK Text Stream consumer、abort/error/refetch 处理、follow-up stream API，以及真实恢复测试；这些应作为后续实现任务进入验收门禁。
 
 ## 验收清单
 
