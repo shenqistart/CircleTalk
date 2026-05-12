@@ -9,7 +9,15 @@ from backend.config.database_url import resolve_database_url
 from core.database.base import Base
 
 # 导入所有模型，确保 Alembic 能检测到
-from backend.domain.model.roundtable import RoundtableArtifact, RoundtableMessage, RoundtablePersonaModel, RoundtableSession, RoundtableSessionPersona, RoundtableTechnicalConfirmation  # noqa: F401
+from backend.database_url import resolve_database_url
+from backend.domain.model.roundtable import (  # noqa: F401
+    RoundtableArtifact,
+    RoundtableMessage,
+    RoundtablePersona,
+    RoundtableSession,
+    RoundtableSessionPersona,
+    RoundtableTechnicalConfirmation,
+)
 from backend.domain.model.user import User  # noqa: F401
 
 config = context.config
@@ -20,7 +28,9 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    return resolve_database_url(async_driver=False)
+    app_config = ConfigLoader.load()
+    tenant = os.environ.get("ALEMBIC_TENANT", "default")
+    return resolve_database_url(app_config, tenant=tenant)
 
 
 def run_migrations_offline() -> None:

@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from backend.container import AppContainer
-from backend.config.database_url import resolve_database_url
+from backend.database_url import resolve_database_url
 from backend.domain.api import roundtable_router, user_router
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ async def initialize_db_engines(config: dict) -> None:
     db_config = config.get("database", {})
     tenants = config.get("tenants", {})
 
-    url = resolve_database_url(config, async_driver=True)
+    url = resolve_database_url(config)
 
     engine = create_async_engine(
         url,
