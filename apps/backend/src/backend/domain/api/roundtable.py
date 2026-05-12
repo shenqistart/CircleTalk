@@ -1,10 +1,10 @@
-"""Roundtable decision advisor API."""
+"""Roundtable REST and text stream endpoints."""
 
 from typing import Annotated
 
 from core.database.session import db_session
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,19 +27,27 @@ router = APIRouter(prefix="/roundtable", tags=["圆桌对话"])
 @error_handler("查询圆桌人物")
 async def list_personas(
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
-    session: Annotated[AsyncSession, Depends(db_session)],
 ) -> list[RoundtablePersonaSchema]:
-    return await service.list_personas(session)
+    return [
+        RoundtablePersonaSchema(
+            id=persona.id,
+            display_name=persona.display_name,
+            skill_name=persona.skill_name,
+            summary=persona.summary,
+            selection_reason=persona.selection_reason,
+        )
+        for persona in service.personas()
+    ]
 
 
 @router.post("/personas/recommend")
 @inject
 @error_handler("推荐圆桌人物")
-async def recommend_personas(
+async def recommend_persona_list(
     request: RecommendPersonasRequest,
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
 ) -> list[RoundtablePersonaSchema]:
-    return await service.recommend(request.decision_prompt)
+    return [service._persona_schema(persona) for persona in service.recommend(request.decision_prompt)]
 
 
 @router.post("/sessions")
@@ -50,7 +58,7 @@ async def create_session(
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
     session: Annotated[AsyncSession, Depends(db_session)],
 ) -> CreateRoundtableSessionResponse:
-    return await service.create_session(session, request)
+    return await service.create_session(session, request.decision_prompt, request.persona_ids)
 
 
 @router.get("/sessions/{session_id}")
@@ -61,48 +69,28 @@ async def get_session(
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
     session: Annotated[AsyncSession, Depends(db_session)],
 ) -> RoundtableSessionSchema:
-    return await service.get_session(session, session_id)
+    restored = await service.get_session(session, session_id)
+    if restored is None:
+        raise HTTPException(status_code=404, detail="roundtable session not found")
+    return restored
 
 
 @router.post("/sessions/{session_id}/stream")
 @inject
 async def stream_session(
     session_id: str,
-    request: Request,
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
     session: Annotated[AsyncSession, Depends(db_session)],
 ) -> StreamingResponse:
-    try:
-        stream = service.stream_discussion(session, session_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    async def body():
-        async for chunk in stream:
-            if await request.is_disconnected():
-                await service.mark_cancelled(session, session_id)
-                break
-            yield chunk.encode("utf-8")
-
-    return StreamingResponse(body(), media_type="text/plain; charset=utf-8")
+    return StreamingResponse(service.stream_session(session, session_id), media_type="text/plain; charset=utf-8")
 
 
 @router.post("/sessions/{session_id}/follow-up/stream")
 @inject
 async def stream_follow_up(
     session_id: str,
-    request_data: FollowUpRequest,
-    request: Request,
+    request: FollowUpRequest,
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
     session: Annotated[AsyncSession, Depends(db_session)],
 ) -> StreamingResponse:
-    stream = service.stream_follow_up(session, session_id, request_data.question)
-
-    async def body():
-        async for chunk in stream:
-            if await request.is_disconnected():
-                await service.mark_cancelled(session, session_id)
-                break
-            yield chunk.encode("utf-8")
-
-    return StreamingResponse(body(), media_type="text/plain; charset=utf-8")
+    return StreamingResponse(service.follow_up(session, session_id, request.question), media_type="text/plain; charset=utf-8")

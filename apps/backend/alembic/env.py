@@ -1,15 +1,15 @@
 """Alembic 迁移环境，支持多租户 schema。"""
 
-import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import create_engine
 
-from core.config.loader import ConfigLoader
+from backend.config.database_url import resolve_database_url
 from core.database.base import Base
 
 # 导入所有模型，确保 Alembic 能检测到
+from backend.domain.model.roundtable import RoundtableArtifact, RoundtableMessage, RoundtablePersonaModel, RoundtableSession, RoundtableSessionPersona, RoundtableTechnicalConfirmation  # noqa: F401
 from backend.domain.model.user import User  # noqa: F401
 
 config = context.config
@@ -20,18 +20,7 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    app_config = ConfigLoader.load()
-    db_config = app_config.get("database", {})
-    tenants = app_config.get("tenants", {})
-    tenant = os.environ.get("ALEMBIC_TENANT", "default")
-    db_name = tenants.get(tenant, {}).get("database", {}).get("name", "bedrock")
-    return (
-        f"postgresql+psycopg://{db_config.get('username', 'postgres')}"
-        f":{db_config.get('password', 'postgres')}"
-        f"@{db_config.get('host', 'localhost')}"
-        f":{db_config.get('port', 5432)}"
-        f"/{db_name}"
-    )
+    return resolve_database_url(async_driver=False)
 
 
 def run_migrations_offline() -> None:

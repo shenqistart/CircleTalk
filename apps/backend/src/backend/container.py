@@ -2,7 +2,9 @@
 
 from dependency_injector import containers, providers
 
+from backend.domain.repository.roundtable_repository import RoundtableRepository
 from backend.domain.repository.user_repository import UserRepository
+from backend.domain.service.roundtable_service import RoundtableService
 from backend.domain.service.user_service import UserService
 
 
@@ -11,6 +13,8 @@ class AppContainer(containers.DeclarativeContainer):
 
     # --- Repository 层 ---
     user_repository = providers.Singleton(UserRepository)
+    roundtable_repository = providers.Singleton(RoundtableRepository)
 
     # --- Service 层 ---
     user_service = providers.Singleton(UserService, repository=user_repository)
+    roundtable_service = providers.Singleton(RoundtableService, repository=roundtable_repository)

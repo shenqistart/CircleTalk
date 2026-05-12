@@ -18,7 +18,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from backend.container import AppContainer
-from backend.domain.api import user_router
+from backend.config.database_url import resolve_database_url
+from backend.domain.api import roundtable_router, user_router
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +29,7 @@ async def initialize_db_engines(config: dict) -> None:
     db_config = config.get("database", {})
     tenants = config.get("tenants", {})
 
-    db_name = next(iter(tenants.values())).get("database", {}).get("name", "bedrock") if tenants else "bedrock"
-    url = (
-        f"postgresql+psycopg://{db_config.get('username', 'postgres')}"
-        f":{db_config.get('password', 'postgres')}"
-        f"@{db_config.get('host', 'localhost')}"
-        f":{db_config.get('port', 5432)}"
-        f"/{db_name}"
-    )
+    url = resolve_database_url(config, async_driver=True)
 
     engine = create_async_engine(
         url,
@@ -64,7 +58,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
     # 装配依赖注入容器
     container = AppContainer()
-    container.wire(modules=["backend.domain.api.user"])
+    container.wire(modules=["backend.domain.api.user", "backend.domain.api.roundtable"])
     app.state.container = container
 
     logger.info("Bedrock 后端已在端口 %s 启动", config.get("server", {}).get("port", 8000))
@@ -124,6 +118,7 @@ async def log_requests_middleware(request: Request, call_next: Callable[[Request
 
 # 注册路由
 app.include_router(user_router, prefix="/api")
+app.include_router(roundtable_router, prefix="/api")
 
 
 @app.get("/health")
