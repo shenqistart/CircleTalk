@@ -12,7 +12,6 @@ export default function App() {
             <Route path="/" element={<Navigate to="/roundtable" replace />} />
             <Route path="/roundtable" element={<RoundtableRoute />} />
             <Route path="/users/*" element={<UserRoutes />} />
-            <Route path="/roundtable" element={<RoundtableRoutes />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

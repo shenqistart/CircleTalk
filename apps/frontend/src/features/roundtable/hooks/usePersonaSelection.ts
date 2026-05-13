@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { roundtableApi } from '@/features/roundtable/api/roundtableApi'
-import type { RoundtablePersona } from '@/features/roundtable/types'
+import type { AppLanguage, RoundtablePersona } from '@/features/roundtable/types'
 
-export function usePersonaSelection() {
+export function usePersonaSelection(language: AppLanguage) {
   const [personas, setPersonas] = useState<RoundtablePersona[]>([])
   const [selectedPersonaIds, setSelectedPersonaIds] = useState<string[]>([])
   const [recommendedPersonas, setRecommendedPersonas] = useState<RoundtablePersona[]>([])
@@ -12,16 +12,17 @@ export function usePersonaSelection() {
   useEffect(() => {
     let isMounted = true
     roundtableApi
-      .getPersonas()
+      .getPersonas(language)
       .then((items) => {
         if (isMounted) {
           setPersonas(items)
+          setRecommendedPersonas([])
           setErrorMessage(null)
         }
       })
       .catch((error: unknown) => {
         if (isMounted) {
-          setErrorMessage(error instanceof Error ? error.message : '人物加载失败')
+          setErrorMessage(error instanceof Error ? error.message : 'Persona loading failed')
         }
       })
       .finally(() => {
@@ -32,7 +33,7 @@ export function usePersonaSelection() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [language])
 
   const selectedPersonas = useMemo(
     () => personas.filter((persona) => selectedPersonaIds.includes(persona.id)),
@@ -54,10 +55,10 @@ export function usePersonaSelection() {
   }, [])
 
   const recommend = useCallback(async (decisionPrompt: string) => {
-    const items = await roundtableApi.recommendPersonas({ decisionPrompt })
+    const items = await roundtableApi.recommendPersonas({ decisionPrompt, language })
     setRecommendedPersonas(items)
     return items
-  }, [])
+  }, [language])
 
   return {
     clearSelection,

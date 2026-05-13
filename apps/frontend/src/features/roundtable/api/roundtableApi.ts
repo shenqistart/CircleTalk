@@ -1,4 +1,5 @@
 import type {
+  AppLanguage,
   CreateRoundtableSessionInput,
   CreateRoundtableSessionResult,
   DecisionArtifact,
@@ -12,7 +13,38 @@ import type {
 
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 
-const demoPersonas: RoundtablePersona[] = [
+const demoPersonasByLanguage: Record<AppLanguage, RoundtablePersona[]> = {
+  en: [
+    {
+      id: 'zeng-guofan',
+      displayName: 'Zeng Guofan',
+      skillName: 'nuwa-skill/zeng-guofan',
+      summary: 'Long-termism, organizational discipline, risk reduction, and gradual execution.',
+      selectionReason: 'Useful for evaluating patience, cadence, and organizational cost in complex decisions.',
+    },
+    {
+      id: 'socrates',
+      displayName: 'Socrates',
+      skillName: 'nuwa-skill/socrates',
+      summary: 'Uses questions to unpack concepts, assumptions, and unstated premises.',
+      selectionReason: 'Useful for identifying hidden assumptions inside the decision prompt.',
+    },
+    {
+      id: 'drucker',
+      displayName: 'Peter Drucker',
+      skillName: 'nuwa-skill/drucker',
+      summary: 'Goals, accountability, organizational performance, customer value, and executable management actions.',
+      selectionReason: 'Useful for converging discussion into ownership and next steps.',
+    },
+    {
+      id: 'munger',
+      displayName: 'Charlie Munger',
+      skillName: 'nuwa-skill/munger',
+      summary: 'Inversion, incentives, opportunity cost, and multidisciplinary models.',
+      selectionReason: 'Useful for finding obvious but easily missed failure paths.',
+    },
+  ],
+  zh: [
   {
     id: 'zeng-guofan',
     displayName: '曾国藩',
@@ -41,7 +73,16 @@ const demoPersonas: RoundtablePersona[] = [
     summary: '强调反向思考、激励机制与跨学科模型。',
     selectionReason: '适合发现明显但容易忽略的失败路径。',
   },
-]
+  ],
+}
+
+function normalizedLanguage(language?: AppLanguage): AppLanguage {
+  return language === 'en' ? 'en' : 'zh'
+}
+
+function demoPersonas(language?: AppLanguage): RoundtablePersona[] {
+  return demoPersonasByLanguage[normalizedLanguage(language)]
+}
 
 function apiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
@@ -68,9 +109,16 @@ function toSelectedPersona(persona: RoundtablePersona, sequence: number, selecti
   return { ...persona, sequence, selectionSource }
 }
 
-function createDemoMessages(sessionId: string, decisionPrompt: string, selectedPersonas: SelectedPersona[]): RoundtableMessage[] {
+function createDemoMessages(sessionId: string, decisionPrompt: string, selectedPersonas: SelectedPersona[], language?: AppLanguage): RoundtableMessage[] {
   const now = new Date().toISOString()
-  const personas = selectedPersonas.length > 0 ? selectedPersonas : demoPersonas.slice(0, 3).map((persona, index) => toSelectedPersona(persona, index + 1, 'auto'))
+  const currentLanguage = normalizedLanguage(language)
+  const personas = selectedPersonas.length > 0 ? selectedPersonas : demoPersonas(currentLanguage).slice(0, 3).map((persona, index) => toSelectedPersona(persona, index + 1, 'auto'))
+  const personaLine = currentLanguage === 'en'
+    ? (persona: SelectedPersona) => `${persona.displayName}: clarify goals, constraints, and unacceptable risks before deciding whether to proceed.`
+    : (persona: SelectedPersona) => `${persona.displayName}：先明确目标、约束与不可承受风险，再决定是否推进。`
+  const moderatorPending = currentLanguage === 'en'
+    ? 'Moderator: start the discussion stream first. The full transcript and artifacts will refresh when it finishes.'
+    : '主持人：请先启动讨论流。完成后系统会拉取三件套与完整记录。'
 
   return [
     {
@@ -86,7 +134,7 @@ function createDemoMessages(sessionId: string, decisionPrompt: string, selectedP
       role: 'persona' as const,
       personaId: persona.id,
       personaName: persona.displayName,
-      content: `${persona.displayName}：先明确目标、约束与不可承受风险，再决定是否推进。`,
+      content: personaLine(persona),
       roundName: 'opening' as const,
       sequence: index + 2,
       createdAt: now,
@@ -94,7 +142,7 @@ function createDemoMessages(sessionId: string, decisionPrompt: string, selectedP
     {
       id: `${sessionId}-synthesis`,
       role: 'moderator',
-      content: '主持人：请先启动讨论流。完成后系统会拉取三件套与完整 transcript。',
+      content: moderatorPending,
       roundName: 'synthesis',
       sequence: personas.length + 2,
       createdAt: now,
@@ -102,24 +150,33 @@ function createDemoMessages(sessionId: string, decisionPrompt: string, selectedP
   ]
 }
 
-function createDemoArtifact(selectedPersonas: SelectedPersona[]): DecisionArtifact {
+function createDemoArtifact(selectedPersonas: SelectedPersona[], language?: AppLanguage): DecisionArtifact {
+  const currentLanguage = normalizedLanguage(language)
   const debateMap = selectedPersonas.map((persona) => ({
     personaName: persona.displayName,
-    position: '支持先做小规模验证，再投入完整资源。',
+    position: currentLanguage === 'en' ? 'Supports validating with a small pilot before committing full resources.' : '支持先做小规模验证，再投入完整资源。',
     keyConcern: persona.selectionReason ?? persona.summary,
   }))
 
-  return {
-    memo: '先用最小可逆实验验证关键假设，避免在目标、资源、风险未澄清时过早承诺。',
-    recommendation: '建议推进一个两周试点，并设置清晰的停止条件。',
-    reasons: ['保留选择权', '尽早暴露风险', '用真实反馈替代抽象争论'],
-    debateMap,
-  }
+  return currentLanguage === 'en'
+    ? {
+        memo: 'Use a small reversible experiment to test the key assumptions before committing resources.',
+        recommendation: 'Run a two-week pilot and define clear stop conditions.',
+        reasons: ['Preserve options', 'Expose risks early', 'Replace abstract debate with real feedback'],
+        debateMap,
+      }
+    : {
+        memo: '先用最小可逆实验验证关键假设，避免在目标、资源、风险未澄清时过早承诺。',
+        recommendation: '建议推进一个两周试点，并设置清晰的停止条件。',
+        reasons: ['保留选择权', '尽早暴露风险', '用真实反馈替代抽象争论'],
+        debateMap,
+      }
 }
 
 function createMockSession(input: CreateRoundtableSessionInput): CreateRoundtableSessionResult {
   const hasManualSelection = Boolean(input.personaIds?.length)
-  const selectedPersonas = (hasManualSelection ? demoPersonas.filter((persona) => input.personaIds?.includes(persona.id)) : demoPersonas.slice(0, 3)).map(
+  const personas = demoPersonas(input.language)
+  const selectedPersonas = (hasManualSelection ? personas.filter((persona) => input.personaIds?.includes(persona.id)) : personas.slice(0, 3)).map(
     (persona, index) => toSelectedPersona(persona, index + 1, hasManualSelection ? 'manual' : 'auto'),
   )
   const now = new Date().toISOString()
@@ -129,8 +186,8 @@ function createMockSession(input: CreateRoundtableSessionInput): CreateRoundtabl
     decisionPrompt: input.decisionPrompt,
     status: 'ready',
     selectedPersonas,
-    transcript: createDemoMessages(sessionId, input.decisionPrompt, selectedPersonas),
-    artifacts: createDemoArtifact(selectedPersonas),
+    transcript: createDemoMessages(sessionId, input.decisionPrompt, selectedPersonas, input.language),
+    artifacts: createDemoArtifact(selectedPersonas, input.language),
     createdAt: now,
     updatedAt: now,
   }
@@ -139,11 +196,11 @@ function createMockSession(input: CreateRoundtableSessionInput): CreateRoundtabl
 }
 
 export const roundtableApi: RoundtableApiClient = {
-  async getPersonas() {
+  async getPersonas(language) {
     try {
-      return await fetchJson<RoundtablePersona[]>('/roundtable/personas')
+      return await fetchJson<RoundtablePersona[]>(`/roundtable/personas?language=${normalizedLanguage(language)}`)
     } catch {
-      return demoPersonas
+      return demoPersonas(language)
     }
   },
 
@@ -154,7 +211,7 @@ export const roundtableApi: RoundtableApiClient = {
         body: JSON.stringify(input),
       })
     } catch {
-      return demoPersonas.slice(0, 3)
+      return demoPersonas(input.language).slice(0, 3)
     }
   },
 
@@ -169,9 +226,9 @@ export const roundtableApi: RoundtableApiClient = {
     }
   },
 
-  getSession(sessionId: string) {
+  getSession(sessionId: string, language?: AppLanguage) {
     if (sessionId.startsWith('mock-')) {
-      const fallback = createMockSession({ decisionPrompt: '本地演示会话' })
+      const fallback = createMockSession({ decisionPrompt: language === 'en' ? 'Local demo session' : '本地演示会话', language })
       return Promise.resolve({ ...fallback.session, id: sessionId })
     }
 

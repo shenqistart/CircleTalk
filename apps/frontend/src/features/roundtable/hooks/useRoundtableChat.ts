@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getRoundtableStreamUrl, roundtableApi } from '@/features/roundtable/api/roundtableApi'
-import type { CreateRoundtableSessionInput, RoundtableSession } from '@/features/roundtable/types'
+import type { AppLanguage, CreateRoundtableSessionInput, RoundtableSession } from '@/features/roundtable/types'
 
 export const AI_SDK_TEXT_STREAM_PROTOCOL = 'text'
 
-export function useRoundtableChat() {
+export function useRoundtableChat(language: AppLanguage) {
   const [session, setSession] = useState<RoundtableSession | null>(null)
   const [streamText, setStreamText] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
@@ -13,19 +13,19 @@ export function useRoundtableChat() {
   const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   const refreshSession = useCallback(async (sessionId: string) => {
-    const restored = await roundtableApi.getSession(sessionId)
+    const restored = await roundtableApi.getSession(sessionId, language)
     setSession(restored)
     return restored
-  }, [])
+  }, [language])
 
   const createSession = useCallback(async (input: CreateRoundtableSessionInput) => {
     setErrorMessage(null)
     setStreamText('')
-    const result = await roundtableApi.createSession(input)
+    const result = await roundtableApi.createSession({ ...input, language })
     setSession(result.session)
     window.history.replaceState(null, '', `/roundtable?session=${result.session.id}`)
     return result.session
-  }, [])
+  }, [language])
 
   const consumeTextStream = useCallback(async (url: string, init?: RequestInit) => {
     const controller = new AbortController()
@@ -64,27 +64,27 @@ export function useRoundtableChat() {
   const startDiscussion = useCallback(async () => {
     if (!session) return
     try {
-      await consumeTextStream(getRoundtableStreamUrl(session.id))
+      await consumeTextStream(getRoundtableStreamUrl(session.id), { body: JSON.stringify({ language }) })
       await refreshSession(session.id)
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        setErrorMessage(error instanceof Error ? error.message : '圆桌讨论失败')
+        setErrorMessage(error instanceof Error ? error.message : 'Roundtable discussion failed')
       }
     }
-  }, [consumeTextStream, refreshSession, session])
+  }, [consumeTextStream, language, refreshSession, session])
 
   const submitFollowUp = useCallback(async () => {
     if (!session || !followUpQuestion.trim()) return
     try {
-      await consumeTextStream(getRoundtableStreamUrl(session.id, true), { body: JSON.stringify({ question: followUpQuestion.trim() }) })
+      await consumeTextStream(getRoundtableStreamUrl(session.id, true), { body: JSON.stringify({ language, question: followUpQuestion.trim() }) })
       setFollowUpQuestion('')
       await refreshSession(session.id)
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        setErrorMessage(error instanceof Error ? error.message : '追问失败')
+        setErrorMessage(error instanceof Error ? error.message : 'Follow-up failed')
       }
     }
-  }, [consumeTextStream, followUpQuestion, refreshSession, session])
+  }, [consumeTextStream, followUpQuestion, language, refreshSession, session])
 
   const abort = useCallback(() => {
     abortController?.abort()

@@ -2,6 +2,14 @@
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Literal
+
+type RoundtableLanguage = Literal["zh", "en"]
+
+
+def normalize_language(language: str | None = None) -> RoundtableLanguage:
+    """Normalize public language inputs to the supported roundtable languages."""
+    return "en" if (language or "").lower().startswith("en") else "zh"
 
 
 class RoundName(StrEnum):
@@ -81,3 +89,12 @@ class RoundtableResult:
 
     messages: tuple[RoundtableMessage, ...]
     artifact: DecisionArtifact
+
+
+@dataclass(frozen=True)
+class RoundtableStreamEvent:
+    """One text-stream event plus optional finalized domain state."""
+
+    text: str = ""
+    message: RoundtableMessage | None = None
+    artifact: DecisionArtifact | None = None

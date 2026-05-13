@@ -11,3 +11,18 @@ ROUND_PROMPTS: dict[RoundName, str] = {
 }
 
 SYNTHESIS_PROMPT = "主持人汇总 memo、recommendation、reasons 和 debate_map 三件套。"
+
+ROUND_PROMPTS_EN: dict[RoundName, str] = {
+    RoundName.OPENING: "Give your core judgment on this decision, naming the most important goal, constraint, and risk.",
+    RoundName.REBUTTAL: "Respond to other personas by naming what you agree with, reject, or would revise. Do not repeat only your opening.",
+    RoundName.CLOSING: "Give your revised final judgment after the first two rounds, including reservations and action advice.",
+}
+
+SYNTHESIS_PROMPT_EN = "The moderator summarizes memo, recommendation, reasons, and debate_map artifacts."
+
+
+def round_prompt(round_name: RoundName, language: str | None = None) -> str:
+    """Return the round task prompt in the requested language."""
+    if (language or "").lower().startswith("en"):
+        return ROUND_PROMPTS_EN[round_name]
+    return ROUND_PROMPTS[round_name]

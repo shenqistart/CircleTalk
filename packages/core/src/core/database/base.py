@@ -11,9 +11,10 @@ class Base(DeclarativeBase):
     """Base class for all ORM models."""
 
     def __init__(self, **kwargs: object) -> None:
-        valid_columns = {c.key for c in self.__table__.columns}
-        filtered = {k: v for k, v in kwargs.items() if k in valid_columns}
-        super().__init__(**filtered)
+        valid_attrs = set(self.__mapper__.attrs.keys())
+        for key, value in kwargs.items():
+            if key in valid_attrs:
+                setattr(self, key, value)
 
     def to_dict(self) -> dict[str, object]:
         """Convert model instance to dictionary, excluding embedding fields."""

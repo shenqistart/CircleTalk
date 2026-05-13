@@ -1,11 +1,13 @@
 import { lazy, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Route, Routes } from 'react-router-dom'
 
 const UserListPage = lazy(() => import('@/features/user/components/UserTable'))
 const RoundtableWorkbench = lazy(() => import('@/features/roundtable/components/RoundtableWorkbench'))
 
 function RouteFallback() {
-  return <div className="py-8 text-center">加载中...</div>
+  const { t } = useTranslation()
+  return <div className="py-8 text-center">{t('app.loading')}</div>
 }
 
 export function UserRoutes() {

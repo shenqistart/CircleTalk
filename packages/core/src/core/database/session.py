@@ -21,12 +21,11 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     factory = DatabaseRegistry.get_base_session_factory()
     async with factory() as session:
-        tenant = try_current_tenant()
-        if tenant:
-            schema = DatabaseRegistry.get_schema_name(tenant)
-            await session.execute(build_search_path_sql(schema))
-
         async with session.begin():
+            tenant = try_current_tenant()
+            if tenant:
+                schema = DatabaseRegistry.get_schema_name(tenant)
+                await session.execute(build_search_path_sql(schema))
             yield session
 
 

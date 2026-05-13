@@ -9,6 +9,7 @@ type RoundtableSessionStatus = Literal["draft", "ready", "streaming", "completed
 type PersonaSelectionSource = Literal["auto", "manual"]
 type RoundtableMessageRole = Literal["moderator", "persona", "user", "system"]
 type RoundtableRoundName = Literal["opening", "rebuttal", "closing", "synthesis", "follow_up", "system"]
+type RoundtableLanguage = Literal["zh", "en"]
 
 
 def to_camel(value: str) -> str:
@@ -64,6 +65,7 @@ class RoundtableSessionSchema(CamelModel):
 
 class CreateRoundtableSessionRequest(CamelModel):
     decision_prompt: str = Field(min_length=1, max_length=4000)
+    language: RoundtableLanguage = "zh"
     persona_ids: list[str] = Field(default_factory=list)
 
 
@@ -74,7 +76,13 @@ class CreateRoundtableSessionResponse(CamelModel):
 
 class RecommendPersonasRequest(CamelModel):
     decision_prompt: str = Field(min_length=1, max_length=4000)
+    language: RoundtableLanguage = "zh"
+
+
+class StreamSessionRequest(CamelModel):
+    language: RoundtableLanguage = "zh"
 
 
 class FollowUpRequest(CamelModel):
     question: str = Field(min_length=1, max_length=4000)
+    language: RoundtableLanguage = "zh"

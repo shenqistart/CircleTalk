@@ -4,6 +4,10 @@ export const sidebar = [
     link: '/',
   },
   {
+    text: '本地开发与体验',
+    link: '/dev',
+  },
+  {
     text: 'Claude Code 指南',
     collapsed: false,
     items: [
@@ -18,6 +22,7 @@ export const sidebar = [
     items: [
       { text: '后端架构与开发规范', link: '/backend/architecture' },
       { text: '依赖注入架构指南', link: '/backend/dependency-injection' },
+      { text: 'FastAPI 接口文档', link: '/backend/api' },
       { text: '代码质量规范', link: '/backend/code-quality' },
     ],
   },

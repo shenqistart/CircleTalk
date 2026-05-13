@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useDeleteUser, useUsers } from '../hooks/useUsers'
 import { UserForm } from './UserForm'
 import { UserStatusToggle } from './UserStatusToggle'
@@ -7,6 +8,7 @@ import type { UserSearchParams } from '../types'
 import { ChevronLeft, ChevronRight, Plus, Search, Trash2 } from 'lucide-react'
 
 export default function UserTable() {
+  const { t } = useTranslation()
   const { page, size, goToPage, nextPage, prevPage } = usePagination()
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -23,11 +25,11 @@ export default function UserTable() {
   const { data, isLoading } = useUsers(params)
   const tableRows = (() => {
     if (isLoading) {
-      return <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">加载中...</td></tr>
+      return <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{t('users.loading')}</td></tr>
     }
 
     if (data?.content.length === 0) {
-      return <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">暂无用户数据</td></tr>
+      return <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{t('users.empty')}</td></tr>
     }
 
     return data?.content.map((user) => (
@@ -59,14 +61,14 @@ export default function UserTable() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">用户管理</h1>
+        <h1 className="text-2xl font-bold">{t('users.title')}</h1>
         <button
           type="button"
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800"
         >
           <Plus className="w-4 h-4" />
-          新建用户
+          {t('users.newUser')}
         </button>
       </div>
 
@@ -75,7 +77,7 @@ export default function UserTable() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="搜索用户..."
+            placeholder={t('users.searchPlaceholder')}
             value={keyword}
             onChange={(e) => { setKeyword(e.target.value); goToPage(1) }}
             className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
@@ -86,9 +88,9 @@ export default function UserTable() {
           onChange={(e) => { setStatusFilter(e.target.value); goToPage(1) }}
           className="border rounded-lg px-3 py-2 text-sm"
         >
-          <option value="">全部状态</option>
-          <option value="active">已启用</option>
-          <option value="disabled">已禁用</option>
+          <option value="">{t('users.allStatuses')}</option>
+          <option value="active">{t('users.enabled')}</option>
+          <option value="disabled">{t('users.disabled')}</option>
         </select>
       </div>
 
@@ -96,12 +98,12 @@ export default function UserTable() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">用户名</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">显示名</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">邮箱</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">角色</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-600">操作</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">{t('users.username')}</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">{t('users.displayName')}</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">{t('users.email')}</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">{t('users.status')}</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">{t('users.roles')}</th>
+              <th className="px-4 py-3 text-right font-medium text-gray-600">{t('users.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -112,12 +114,12 @@ export default function UserTable() {
 
       {data && data.total_pages > 1 && (
         <div className="flex items-center justify-between text-sm text-gray-500">
-          <span>共 {data.total} 个用户</span>
+          <span>{t('users.total', { count: data.total })}</span>
           <div className="flex items-center gap-2">
             <button type="button" onClick={prevPage} disabled={page <= 1} className="p-1 hover:bg-gray-100 rounded disabled:opacity-30">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span>第 {page} / {data.total_pages} 页</span>
+            <span>{t('users.pageStatus', { page, totalPages: data.total_pages })}</span>
             <button type="button" onClick={nextPage} disabled={page >= data.total_pages} className="p-1 hover:bg-gray-100 rounded disabled:opacity-30">
               <ChevronRight className="w-4 h-4" />
             </button>

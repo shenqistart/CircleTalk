@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bedrock-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bedrock
+    ports:
+      - "5432:5432"
+    volumes:
+      - bedrock-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bedrock"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: bedrock-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bedrock
+      CONFIG_PATH: /app/apps/backend/config.yaml
+      ROUNDTABLE_LLM_ENABLED: ${ROUNDTABLE_LLM_ENABLED:-false}
+      ROUNDTABLE_LLM_MODEL: ${ROUNDTABLE_LLM_MODEL:-}
+      ROUNDTABLE_LLM_API_KEY: ${ROUNDTABLE_LLM_API_KEY:-}
+      ROUNDTABLE_LLM_BASE_URL: ${ROUNDTABLE_LLM_BASE_URL:-}
+      ROUNDTABLE_LLM_TEMPERATURE: ${ROUNDTABLE_LLM_TEMPERATURE:-0.7}
+      ROUNDTABLE_LLM_MAX_TOKENS: ${ROUNDTABLE_LLM_MAX_TOKENS:-700}
+      ROUNDTABLE_LLM_TIMEOUT: ${ROUNDTABLE_LLM_TIMEOUT:-30}
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  bedrock-postgres-data:

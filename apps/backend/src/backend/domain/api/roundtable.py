@@ -5,7 +5,7 @@ from typing import Annotated
 
 from core.database.session import db_session
 from dependency_injector.wiring import Provide, inject
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,8 +15,10 @@ from backend.domain.schema.roundtable_schema import (
     CreateRoundtableSessionResponse,
     FollowUpRequest,
     RecommendPersonasRequest,
+    RoundtableLanguage,
     RoundtablePersonaSchema,
     RoundtableSessionSchema,
+    StreamSessionRequest,
 )
 from backend.domain.service.roundtable_service import RoundtableService
 
@@ -29,8 +31,9 @@ router = APIRouter(prefix="/roundtable", tags=["圆桌对话"])
 async def list_personas(
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
     session: Annotated[AsyncSession, Depends(db_session)],
+    language: RoundtableLanguage = "zh",
 ) -> list[RoundtablePersonaSchema]:
-    return await service.list_personas(session)
+    return await service.list_personas(session, language)
 
 
 @router.post("/personas/recommend")
@@ -40,7 +43,7 @@ async def recommend_personas(
     request: RecommendPersonasRequest,
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
 ) -> list[RoundtablePersonaSchema]:
-    return await service.recommend(request.decision_prompt)
+    return await service.recommend(request.decision_prompt, request.language)
 
 
 @router.post("/sessions")
@@ -75,8 +78,9 @@ async def stream_session(
     request: Request,
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
     session: Annotated[AsyncSession, Depends(db_session)],
+    request_data: Annotated[StreamSessionRequest | None, Body()] = None,
 ) -> StreamingResponse:
-    stream = service.stream_discussion(session, session_id)
+    stream = service.stream_discussion(session, session_id, (request_data.language if request_data else "zh"))
 
     async def body() -> AsyncIterator[bytes]:
         try:
@@ -100,7 +104,7 @@ async def stream_follow_up(
     service: Annotated[RoundtableService, Depends(Provide["roundtable_service"])],
     session: Annotated[AsyncSession, Depends(db_session)],
 ) -> StreamingResponse:
-    stream = service.stream_follow_up(session, session_id, request_data.question)
+    stream = service.stream_follow_up(session, session_id, request_data.question, request_data.language)
 
     async def body() -> AsyncIterator[bytes]:
         async for chunk in stream:

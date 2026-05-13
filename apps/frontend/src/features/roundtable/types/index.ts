@@ -1,3 +1,7 @@
+import type { AppLanguage } from '@/app/i18n'
+
+export type { AppLanguage } from '@/app/i18n'
+
 export type RoundtableSessionStatus = 'draft' | 'ready' | 'streaming' | 'completed' | 'error' | 'cancelled'
 
 export type PersonaSelectionSource = 'auto' | 'manual'
@@ -50,6 +54,7 @@ export interface RoundtableSession {
 
 export interface CreateRoundtableSessionInput {
   decisionPrompt: string
+  language?: AppLanguage
   personaIds?: string[]
 }
 
@@ -60,11 +65,17 @@ export interface CreateRoundtableSessionResult {
 
 export interface RecommendPersonasInput {
   decisionPrompt: string
+  language?: AppLanguage
+}
+
+export interface FollowUpInput {
+  language?: AppLanguage
+  question: string
 }
 
 export interface RoundtableApiClient {
-  getPersonas(): Promise<RoundtablePersona[]>
+  getPersonas(language?: AppLanguage): Promise<RoundtablePersona[]>
   recommendPersonas(input: RecommendPersonasInput): Promise<RoundtablePersona[]>
   createSession(input: CreateRoundtableSessionInput): Promise<CreateRoundtableSessionResult>
-  getSession(sessionId: string): Promise<RoundtableSession>
+  getSession(sessionId: string, language?: AppLanguage): Promise<RoundtableSession>
 }

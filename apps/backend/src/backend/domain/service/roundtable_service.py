@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from llm.roundtable import RoundtableOrchestrator, load_personas, recommend_personas, select_personas
+from llm.roundtable import RoundtableOrchestrator, load_personas, localize_persona, recommend_personas, select_personas
 from llm.roundtable.schema import DecisionArtifact, SelectedPersona
 from llm.roundtable.schema import RoundtablePersona as LlmPersona
 
@@ -12,6 +12,7 @@ from backend.domain.schema.roundtable_schema import (
     CreateRoundtableSessionRequest,
     CreateRoundtableSessionResponse,
     DecisionArtifactSchema,
+    RoundtableLanguage,
     RoundtableMessageRole,
     RoundtableMessageSchema,
     RoundtablePersonaSchema,
@@ -46,13 +47,21 @@ class RoundtableService:
     async def seed_personas(self, session: AsyncSession) -> None:
         await self._repository.upsert_personas(session, [_persona_to_seed(persona) for persona in load_personas()])
 
-    async def list_personas(self, session: AsyncSession) -> list[RoundtablePersonaSchema]:
+    async def list_personas(
+        self,
+        session: AsyncSession,
+        language: RoundtableLanguage = "zh",
+    ) -> list[RoundtablePersonaSchema]:
         await self.seed_personas(session)
         rows = await self._repository.list_personas(session)
-        return [_persona_schema(row) for row in rows]
+        return [_persona_schema(row, language) for row in rows]
 
-    async def recommend(self, decision_prompt: str) -> list[RoundtablePersonaSchema]:
-        return [_roundtable_persona_schema(item) for item in recommend_personas(decision_prompt)]
+    async def recommend(
+        self,
+        decision_prompt: str,
+        language: RoundtableLanguage = "zh",
+    ) -> list[RoundtablePersonaSchema]:
+        return [_roundtable_persona_schema(item) for item in recommend_personas(decision_prompt, language=language)]
 
     async def create_session(
         self,
@@ -60,7 +69,7 @@ class RoundtableService:
         request: CreateRoundtableSessionRequest,
     ) -> CreateRoundtableSessionResponse:
         await self.seed_personas(session)
-        selected = select_personas(request.decision_prompt, request.persona_ids)
+        selected = select_personas(request.decision_prompt, request.persona_ids, language=request.language)
         created = await self._repository.create_session(session, request.decision_prompt)
         await self._repository.add_message(
             session,
@@ -83,53 +92,82 @@ class RoundtableService:
         snapshot = await self._repository.snapshot(session, session_id)
         return _session_schema(snapshot)
 
-    async def stream_discussion(self, session: AsyncSession, session_id: str) -> AsyncIterator[str]:
+    async def stream_discussion(
+        self,
+        session: AsyncSession,
+        session_id: str,
+        language: RoundtableLanguage = "zh",
+    ) -> AsyncIterator[str]:
         snapshot = await self._repository.snapshot(session, session_id)
         session_model = cast("RoundtableSession", snapshot["session"])
         await self._repository.update_status(session, session_id, "streaming")
-        selected = _selected_from_snapshot(snapshot)
+        selected = _selected_from_snapshot(snapshot, language)
         try:
-            result = self._orchestrator.run(session_model.decision_prompt, selected)
             messages = cast("list[RoundtableMessage]", snapshot["messages"])
             sequence = max((message.sequence for message in messages), default=0)
-            for generated in result.messages:
-                sequence += 1
-                await self._repository.add_message(
-                    session,
-                    session_id,
-                    role=generated.role,
-                    content=generated.content,
-                    round_name=generated.round_name,
-                    persona_id=generated.persona_id,
-                    sequence=sequence,
-                )
-                yield f"{generated.content}\n\n"
-            await self._repository.replace_artifact(session, session_id, result.artifact)
+            async for event in self._orchestrator.stream(session_model.decision_prompt, selected, language):
+                if event.text:
+                    yield event.text
+                if event.message is not None:
+                    sequence += 1
+                    await self._repository.add_message(
+                        session,
+                        session_id,
+                        role=event.message.role,
+                        content=event.message.content,
+                        round_name=event.message.round_name,
+                        persona_id=event.message.persona_id,
+                        sequence=sequence,
+                    )
+                if event.artifact is not None:
+                    await self._repository.replace_artifact(session, session_id, event.artifact)
             await self._repository.update_status(session, session_id, "completed")
         except Exception:
             await self._repository.update_status(session, session_id, "error")
-            yield "圆桌讨论生成失败，请稍后重试。"
+            failure_message = (
+                "Roundtable discussion failed. Please try again later."
+                if language == "en"
+                else "圆桌讨论生成失败，请稍后重试。"
+            )
+            yield failure_message
             raise
 
-    async def stream_follow_up(self, session: AsyncSession, session_id: str, question: str) -> AsyncIterator[str]:
+    async def stream_follow_up(
+        self,
+        session: AsyncSession,
+        session_id: str,
+        question: str,
+        language: RoundtableLanguage = "zh",
+    ) -> AsyncIterator[str]:
         snapshot = await self._repository.snapshot(session, session_id)
-        selected = _selected_from_snapshot(snapshot)
+        selected = _selected_from_snapshot(snapshot, language)
         messages = cast("list[RoundtableMessage]", snapshot["messages"])
         transcript = [message.content for message in messages]
         artifact_row = cast("RoundtableArtifact | None", snapshot["artifact"])
         artifact = _artifact_from_row(artifact_row) if artifact_row else None
-        generated = await self._orchestrator.follow_up(question, selected, transcript, artifact)
-        sequence = max((message.sequence for message in messages), default=0) + 1
-        row = await self._repository.add_message(
-            session,
-            session_id,
-            role=generated.role,
-            content=generated.content,
-            round_name="follow_up",
-            sequence=sequence,
-        )
+        sequence = max((message.sequence for message in messages), default=0)
+        row: RoundtableMessage | None = None
+        async for event in self._orchestrator.stream_follow_up(question, selected, transcript, artifact, language):
+            if event.text:
+                yield event.text
+            if event.message is not None:
+                sequence += 1
+                row = await self._repository.add_message(
+                    session,
+                    session_id,
+                    role=event.message.role,
+                    content=event.message.content,
+                    round_name=event.message.round_name,
+                    sequence=sequence,
+                )
         await self._repository.update_status(session, session_id, "completed")
-        yield f"{row.content}\n"
+        if row is None:
+            failure_message = (
+                "Follow-up generation failed. Please try again later."
+                if language == "en"
+                else "追问生成失败，请稍后重试。"
+            )
+            yield failure_message
 
     async def mark_cancelled(self, session: AsyncSession, session_id: str) -> None:
         await self._repository.update_status(session, session_id, "cancelled")
@@ -156,12 +194,13 @@ def _selected_to_row(item: SelectedPersona) -> dict[str, object]:
     }
 
 
-def _persona_schema(row: RoundtablePersonaModel) -> RoundtablePersonaSchema:
+def _persona_schema(row: RoundtablePersonaModel, language: RoundtableLanguage = "zh") -> RoundtablePersonaSchema:
+    persona = localize_persona(_persona_from_row(row), language)
     return RoundtablePersonaSchema(
-        id=row.id,
-        display_name=row.display_name,
-        skill_name=row.skill_name,
-        summary=row.summary,
+        id=persona.id,
+        display_name=persona.display_name,
+        skill_name=persona.skill_name,
+        summary=persona.summary,
     )
 
 
@@ -175,23 +214,27 @@ def _roundtable_persona_schema(item: SelectedPersona) -> RoundtablePersonaSchema
     )
 
 
-def _selected_from_snapshot(snapshot: dict[str, object]) -> list[SelectedPersona]:
+def _persona_from_row(row: RoundtablePersonaModel) -> LlmPersona:
+    return LlmPersona(
+        id=row.id,
+        skill_name=row.skill_name,
+        display_name=row.display_name,
+        summary=row.summary,
+        prompt=str(row.prompt_json.get("system", row.summary)),
+        perspective_tags=tuple(row.metadata_json.get("perspective_tags", ())),
+        source_url=row.source_url,
+    )
+
+
+def _selected_from_snapshot(snapshot: dict[str, object], language: RoundtableLanguage = "zh") -> list[SelectedPersona]:
     selected = cast("list[RoundtableSessionPersona]", snapshot["selected"])
     personas = cast("dict[str, RoundtablePersonaModel]", snapshot["personas"])
     results: list[SelectedPersona] = []
     for item in selected:
-        persona = personas[item.persona_id]
+        persona = localize_persona(_persona_from_row(personas[item.persona_id]), language)
         results.append(
             SelectedPersona(
-                persona=LlmPersona(
-                    id=persona.id,
-                    skill_name=persona.skill_name,
-                    display_name=persona.display_name,
-                    summary=persona.summary,
-                    prompt=str(persona.prompt_json.get("system", persona.summary)),
-                    source_url=persona.source_url,
-                    selection_reason=item.selection_reason,
-                ),
+                persona=persona,
                 selection_source=item.selection_source,
                 sequence=item.sequence,
                 selection_reason=item.selection_reason,

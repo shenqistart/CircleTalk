@@ -41,6 +41,8 @@ pnpm-debug.log*
 .coverage
 htmlcov/
 .pytest_cache/
+test-results/
+playwright-report/
 
 # Claude Code
 .claude/state/

@@ -1,10 +1,20 @@
+import { Database, Radio } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { AI_SDK_TEXT_STREAM_PROTOCOL } from '@/features/roundtable/hooks/useRoundtableChat'
 
 export function DeploymentStatusBanner() {
+  const { t } = useTranslation()
   return (
-    <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
-      <strong>专业栈首版：</strong>Vite/Vercel 前端 + FastAPI/Render 后端 + Render Postgres；前端显式使用 AI SDK Text Stream
-      contract（streamProtocol: {AI_SDK_TEXT_STREAM_PROTOCOL}），结构化三件套以 completion 后 refetch 为准。
+    <div className="grid min-w-0 gap-3 md:grid-cols-2">
+      <div className="min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-700">
+        <div className="flex min-w-0 items-start gap-3">
+          <Database className="mt-0.5 size-4 shrink-0 text-zinc-500" />
+          <div className="min-w-0">
+            <p className="font-semibold text-zinc-950">{t('roundtable.status.persistence')}</p>
+            <p className="mt-1 break-words">{t('roundtable.status.persistenceDescription')}</p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

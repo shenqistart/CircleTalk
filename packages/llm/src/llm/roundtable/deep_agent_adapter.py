@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from llm.roundtable.orchestrator import RoundtableOrchestrator
-from llm.roundtable.schema import RoundtableResult, SelectedPersona
+from llm.roundtable.schema import RoundtableLanguage, RoundtableResult, SelectedPersona
 
 
 @dataclass(frozen=True)
@@ -30,10 +30,10 @@ class DeepAgentRoundtableAdapter:
         self._fallback = fallback or RoundtableOrchestrator()
 
     def run(
-        self, decision_prompt: str, personas: list[SelectedPersona]
+        self, decision_prompt: str, personas: list[SelectedPersona], language: RoundtableLanguage | str | None = None
     ) -> RoundtableResult:
         """Run inside the current request; fallback is deterministic when DeepAgents is unavailable."""
-        return self._fallback.run(decision_prompt, personas)
+        return self._fallback.run(decision_prompt, personas, language)
 
 
 RoundtableDeepAgentAdapter = DeepAgentRoundtableAdapter

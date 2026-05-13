@@ -1,7 +1,9 @@
 import { useToggleUserStatus } from '../hooks/useUsers'
+import { useTranslation } from 'react-i18next'
 import type { User } from '../types'
 
 export function UserStatusToggle({ user }: { user: User }) {
+  const { t } = useTranslation()
   const toggleMutation = useToggleUserStatus()
 
   return (
@@ -15,7 +17,7 @@ export function UserStatusToggle({ user }: { user: User }) {
           : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
       }`}
     >
-      {user.status === 'active' ? '已启用' : '已禁用'}
+      {user.status === 'active' ? t('users.enabled') : t('users.disabled')}
     </button>
   )
 }

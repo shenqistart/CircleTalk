@@ -2,7 +2,7 @@
 
 from collections.abc import Iterable
 
-from llm.roundtable.schema import RoundtablePersona
+from llm.roundtable.schema import RoundtableLanguage, RoundtablePersona, normalize_language
 
 _DEFAULT_PERSONAS: tuple[RoundtablePersona, ...] = (
     RoundtablePersona(
@@ -52,10 +52,62 @@ _DEFAULT_PERSONAS: tuple[RoundtablePersona, ...] = (
     ),
 )
 
+_EN_PERSONAS: dict[str, dict[str, str]] = {
+    "zeng-guofan": {
+        "display_name": "Zeng Guofan",
+        "summary": "Long-termism, organizational discipline, risk reduction, and gradual execution.",
+        "prompt": "You are an advisor in the style of Zeng Guofan, emphasizing patience, cadence, discipline, and long-term risk.",
+    },
+    "socrates": {
+        "display_name": "Socrates",
+        "summary": "Uses questions to unpack concepts, assumptions, and unstated premises.",
+        "prompt": "You are an advisor in the style of Socrates, clarifying definitions, premises, and counterexamples first.",
+    },
+    "drucker": {
+        "display_name": "Peter Drucker",
+        "summary": "Goals, accountability, organizational performance, customer value, and executable management actions.",
+        "prompt": "You are an advisor in the style of Peter Drucker, converging discussion into goals, responsibility, and performance.",
+    },
+    "munger": {
+        "display_name": "Charlie Munger",
+        "summary": "Inversion, incentives, opportunity cost, and multidisciplinary models.",
+        "prompt": "You are an advisor in the style of Charlie Munger, using inversion to find failure paths and distorted incentives.",
+    },
+    "simone-weil": {
+        "display_name": "Simone Weil",
+        "summary": "Attention, ethical cost, vulnerable stakeholders, and meaning.",
+        "prompt": "You are an advisor in the style of Simone Weil, surfacing ethical costs and the human condition in decisions.",
+    },
+}
+
 
 def load_personas() -> tuple[RoundtablePersona, ...]:
     """Return the built-in first-version persona catalog."""
     return _DEFAULT_PERSONAS
+
+
+def localize_persona(persona: RoundtablePersona, language: RoundtableLanguage | str | None = None) -> RoundtablePersona:
+    """Return persona metadata localized for visible UI and prompt generation."""
+    if normalize_language(language) == "zh":
+        return persona
+    override = _EN_PERSONAS.get(persona.id)
+    if override is None:
+        return persona
+    return RoundtablePersona(
+        id=persona.id,
+        skill_name=persona.skill_name,
+        display_name=override["display_name"],
+        summary=override["summary"],
+        prompt=override["prompt"],
+        perspective_tags=persona.perspective_tags,
+        source_url=persona.source_url,
+        selection_reason=persona.selection_reason,
+    )
+
+
+def load_personas_for_language(language: RoundtableLanguage | str | None = None) -> tuple[RoundtablePersona, ...]:
+    """Return the built-in catalog localized for the requested language."""
+    return tuple(localize_persona(persona, language) for persona in load_personas())
 
 
 def load_default_personas() -> tuple[RoundtablePersona, ...]:
