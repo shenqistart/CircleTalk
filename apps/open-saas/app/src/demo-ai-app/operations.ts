@@ -11,7 +11,7 @@ import type {
   UpdateTask,
 } from "wasp/server/operations";
 import * as z from "zod";
-import { SubscriptionStatus } from "../payment/plans";
+import { isUserSubscribed } from "../payment/entitlements";
 import { ensureArgsSchemaOrThrowHttpError } from "../server/validation";
 import { GeneratedSchedule, TaskPriority } from "./schedule";
 
@@ -104,13 +104,6 @@ export const generateGptResponse: GenerateGptResponse<
 
   return generatedSchedule;
 };
-
-function isUserSubscribed(user: User) {
-  return (
-    user.subscriptionStatus === SubscriptionStatus.Active ||
-    user.subscriptionStatus === SubscriptionStatus.CancelAtPeriodEnd
-  );
-}
 
 const createTaskInputSchema = z.object({
   description: z.string().nonempty(),

@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, cast
 
-from llm.roundtable import RoundtableOrchestrator, load_personas, localize_persona, recommend_personas, select_personas
-from llm.roundtable.schema import DecisionArtifact, SelectedPersona
+from llm.roundtable import (
+    RoundtableOrchestrator,
+    deepagents_status,
+    load_personas,
+    localize_persona,
+    recommend_personas,
+    select_personas,
+)
+from llm.roundtable.schema import DecisionArtifact, RoundtableMessage, SelectedPersona
 from llm.roundtable.schema import RoundtablePersona as LlmPersona
 
 from backend.domain.schema.roundtable_schema import (
@@ -20,6 +28,21 @@ from backend.domain.schema.roundtable_schema import (
     RoundtableSessionSchema,
     RoundtableSessionStatus,
     SelectedPersonaSchema,
+)
+from backend.domain.schema.roundtable_worker_schema import (
+    FollowUpRequestV1,
+    RecommendPersonasResponseV1,
+    StartDiscussionRequestV1,
+    WorkerArtifact,
+    WorkerArtifactUpdatedEvent,
+    WorkerCompletedEvent,
+    WorkerErrorEvent,
+    WorkerErrorV1,
+    WorkerMessageCompletedEvent,
+    WorkerMessageDeltaEvent,
+    WorkerPersona,
+    WorkerStartedEvent,
+    WorkerStatusResponseV1,
 )
 
 if TYPE_CHECKING:
@@ -62,6 +85,123 @@ class RoundtableService:
         language: RoundtableLanguage = "zh",
     ) -> list[RoundtablePersonaSchema]:
         return [_roundtable_persona_schema(item) for item in recommend_personas(decision_prompt, language=language)]
+
+    async def list_worker_personas(self, language: RoundtableLanguage = "zh") -> list[WorkerPersona]:
+        return [_worker_persona_schema(localize_persona(persona, language), language) for persona in load_personas()]
+
+    async def recommend_worker_personas(
+        self,
+        request_id: str,
+        decision_prompt: str,
+        language: RoundtableLanguage = "zh",
+        max_personas: int = 3,
+    ) -> RecommendPersonasResponseV1:
+        personas = [
+            _worker_persona_schema(item.persona, language)
+            for item in recommend_personas(decision_prompt, language=language)[:max_personas]
+        ]
+        return RecommendPersonasResponseV1(request_id=request_id, personas=personas)
+
+    async def worker_status(self, *, deepagents_enabled: bool) -> WorkerStatusResponseV1:
+        status = deepagents_status()
+        return WorkerStatusResponseV1(
+            deepagents_available=status.available,
+            deepagents_detail=status.detail,
+            deepagents_enabled=deepagents_enabled,
+        )
+
+    async def stream_worker_discussion(
+        self,
+        request: StartDiscussionRequestV1,
+    ) -> AsyncIterator[
+        WorkerStartedEvent
+        | WorkerMessageDeltaEvent
+        | WorkerMessageCompletedEvent
+        | WorkerArtifactUpdatedEvent
+        | WorkerCompletedEvent
+        | WorkerErrorEvent
+    ]:
+        yield WorkerStartedEvent(
+            request_id=request.request_id,
+            session_id=request.session_id,
+            started_at=datetime.now(UTC),
+        )
+        selected = [_worker_selected_to_llm(persona) for persona in request.personas]
+        sequence = max((message.sequence for message in request.prior_messages), default=0)
+        try:
+            async for event in self._orchestrator.stream(request.decision_prompt, selected, request.language):
+                if event.text:
+                    yield WorkerMessageDeltaEvent(
+                        request_id=request.request_id,
+                        session_id=request.session_id,
+                        message_id=f"{request.session_id}:{sequence + 1}",
+                        sequence=sequence + 1,
+                        text_delta=event.text,
+                    )
+                if event.message is not None:
+                    sequence += 1
+                    yield _worker_message_completed_event(
+                        request.request_id,
+                        request.session_id,
+                        sequence,
+                        event.message,
+                    )
+                if event.artifact is not None:
+                    yield WorkerArtifactUpdatedEvent(
+                        request_id=request.request_id,
+                        session_id=request.session_id,
+                        payload=_worker_artifact_schema(event.artifact),
+                        is_final=True,
+                    )
+            yield WorkerCompletedEvent(
+                request_id=request.request_id,
+                session_id=request.session_id,
+                usage={"messages": sequence},
+                completed_at=datetime.now(UTC),
+            )
+        except Exception as exc:
+            yield _worker_error_event(request.request_id, request.session_id, exc)
+
+    async def stream_worker_follow_up(
+        self,
+        request: FollowUpRequestV1,
+    ) -> AsyncIterator[WorkerMessageDeltaEvent | WorkerMessageCompletedEvent | WorkerCompletedEvent | WorkerErrorEvent]:
+        selected = [_worker_selected_to_llm(persona) for persona in request.personas]
+        transcript = [message.content for message in request.messages]
+        artifact = _worker_artifact_to_llm(request.artifact) if request.artifact else None
+        sequence = max((message.sequence for message in request.messages), default=0)
+        try:
+            async for event in self._orchestrator.stream_follow_up(
+                request.question,
+                selected,
+                transcript,
+                artifact,
+                request.language,
+            ):
+                if event.text:
+                    yield WorkerMessageDeltaEvent(
+                        request_id=request.request_id,
+                        session_id=request.session_id,
+                        message_id=f"{request.session_id}:{sequence + 1}",
+                        sequence=sequence + 1,
+                        text_delta=event.text,
+                    )
+                if event.message is not None:
+                    sequence += 1
+                    yield _worker_message_completed_event(
+                        request.request_id,
+                        request.session_id,
+                        sequence,
+                        event.message,
+                    )
+            yield WorkerCompletedEvent(
+                request_id=request.request_id,
+                session_id=request.session_id,
+                usage={"messages": sequence},
+                completed_at=datetime.now(UTC),
+            )
+        except Exception as exc:
+            yield _worker_error_event(request.request_id, request.session_id, exc)
 
     async def create_session(
         self,
@@ -211,6 +351,86 @@ def _roundtable_persona_schema(item: SelectedPersona) -> RoundtablePersonaSchema
         skill_name=item.persona.skill_name,
         summary=item.persona.summary,
         selection_reason=item.selection_reason,
+    )
+
+
+def _worker_persona_schema(persona: LlmPersona, language: RoundtableLanguage = "zh") -> WorkerPersona:
+    return WorkerPersona(
+        id=persona.id,
+        name=persona.display_name,
+        title=persona.skill_name,
+        description=persona.summary,
+        expertise=list(persona.perspective_tags),
+        language=language,
+        metadata={"sourceUrl": persona.source_url} if persona.source_url else {},
+    )
+
+
+def _worker_selected_to_llm(persona: WorkerPersona) -> SelectedPersona:
+    metadata = persona.metadata or {}
+    return SelectedPersona(
+        persona=LlmPersona(
+            id=persona.id,
+            skill_name=persona.title,
+            display_name=persona.name,
+            summary=persona.description,
+            prompt=str(metadata.get("prompt", persona.description)),
+            perspective_tags=tuple(persona.expertise),
+            source_url=cast("str | None", metadata.get("sourceUrl")),
+            selection_reason=getattr(persona, "selection_reason", None),
+        ),
+        selection_source=getattr(persona, "selection_source", "manual"),
+        sequence=getattr(persona, "sequence", 1),
+        selection_reason=getattr(persona, "selection_reason", None),
+    )
+
+
+def _worker_artifact_schema(artifact: DecisionArtifact) -> WorkerArtifact:
+    return WorkerArtifact(
+        memo=artifact.memo,
+        recommendation=artifact.recommendation,
+        reasons=list(artifact.reasons),
+        debate_map=list(artifact.debate_map),
+    )
+
+
+def _worker_artifact_to_llm(artifact: WorkerArtifact) -> DecisionArtifact:
+    return DecisionArtifact(
+        memo=artifact.memo,
+        recommendation=artifact.recommendation,
+        reasons=tuple(artifact.reasons),
+        debate_map=tuple(artifact.debate_map),
+    )
+
+
+def _worker_message_completed_event(
+    request_id: str,
+    session_id: str,
+    sequence: int,
+    message: RoundtableMessage,
+) -> WorkerMessageCompletedEvent:
+    return WorkerMessageCompletedEvent(
+        request_id=request_id,
+        session_id=session_id,
+        message_id=f"{session_id}:{sequence}",
+        persona_id=message.persona_id,
+        role=cast("RoundtableMessageRole", message.role),
+        round_name=cast("RoundtableRoundName", message.round_name),
+        sequence=sequence,
+        content=message.content,
+    )
+
+
+def _worker_error_event(request_id: str, session_id: str, exc: Exception) -> WorkerErrorEvent:
+    return WorkerErrorEvent(
+        request_id=request_id,
+        session_id=session_id,
+        error=WorkerErrorV1(
+            request_id=request_id,
+            code="roundtable_worker_error",
+            message=str(exc) or "Roundtable worker failed.",
+            retryable=True,
+        ),
     )
 
 

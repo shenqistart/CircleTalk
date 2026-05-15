@@ -26,6 +26,8 @@ model User {
   contactFormMessages       ContactFormMessage[]
   tasks                     Task[]
   files                     File[]
+  roundtableSessions        RoundtableSession[]
+  roundtableUsages          RoundtableUsage[]
 }
 
 model GptResponse {
@@ -108,4 +110,130 @@ model ContactFormMessage {
   content                   String
   isRead                    Boolean         @default(false)
   repliedAt                 DateTime?
+}
+
+model RoundtablePersona {
+  id                        String          @id
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  skillName                 String
+  displayName               String
+  sourceUrl                 String?
+  summary                   String
+  promptJson                Json
+  metadataJson              Json
+
+  selectedInSessions        RoundtableSessionPersona[]
+  messages                  RoundtableMessage[]
+
+  @@index([displayName])
+}
+
+model RoundtableSession {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  user                      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                    String
+
+  decisionPrompt            String
+  language                  String          @default("zh")
+  status                    String          @default("ready")
+  metadataJson              Json
+  expiresAt                 DateTime?
+
+  selectedPersonas          RoundtableSessionPersona[]
+  messages                  RoundtableMessage[]
+  artifacts                 RoundtableArtifact[]
+  usages                    RoundtableUsage[]
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+}
+
+model RoundtableSessionPersona {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  session                   RoundtableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId                 String
+
+  persona                   RoundtablePersona @relation(fields: [personaId], references: [id])
+  personaId                 String
+
+  selectionSource           String
+  selectionReason           String?
+  sequence                  Int
+
+  @@unique([sessionId, personaId])
+  @@index([sessionId, sequence])
+}
+
+model RoundtableMessage {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  session                   RoundtableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId                 String
+
+  persona                   RoundtablePersona? @relation(fields: [personaId], references: [id])
+  personaId                 String?
+
+  role                      String
+  roundName                 String
+  parentMessageId           String?
+  content                   String
+  sequence                  Int
+
+  @@index([sessionId, sequence])
+}
+
+model RoundtableArtifact {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  session                   RoundtableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId                 String
+
+  memo                      String
+  recommendation            String
+  reasonsJson               Json
+  debateMapJson             Json
+  metadataJson              Json
+
+  @@index([sessionId, createdAt])
+}
+
+model RoundtableUsage {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  user                      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                    String
+
+  session                   RoundtableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId                 String
+
+  operation                 String
+  idempotencyKey            String          @unique
+  status                    String
+  reservedAt                DateTime?
+  completedAt               DateTime?
+  cancelledAt               DateTime?
+  errorAt                   DateTime?
+  recoveryAfter             DateTime?
+  workerRequestId           String?
+  streamTokenNonce          String?
+  creditDebitAmount         Int             @default(0)
+  errorMessage              String?
+  metadataJson              Json
+
+  @@index([status, recoveryAfter])
+  @@index([sessionId, status])
+  @@index([userId, createdAt])
+  @@index([workerRequestId])
 }

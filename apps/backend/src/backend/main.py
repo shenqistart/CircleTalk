@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from backend.config.database_url import resolve_database_url
 from backend.container import AppContainer
-from backend.domain.api import roundtable_router, user_router
+from backend.domain.api import roundtable_router, roundtable_worker_router, user_router
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
     # 装配依赖注入容器
     container = AppContainer()
-    container.wire(modules=["backend.domain.api.user", "backend.domain.api.roundtable"])
+    container.wire(
+        modules=[
+            "backend.domain.api.user",
+            "backend.domain.api.roundtable",
+            "backend.domain.api.roundtable_worker",
+        ]
+    )
     app.state.container = container
 
     logger.info("Bedrock 后端已在端口 %s 启动", config.get("server", {}).get("port", 8000))
@@ -119,6 +125,7 @@ async def log_requests_middleware(request: Request, call_next: Callable[[Request
 # 注册路由
 app.include_router(user_router, prefix="/api")
 app.include_router(roundtable_router, prefix="/api")
+app.include_router(roundtable_worker_router)
 
 
 @app.get("/health")

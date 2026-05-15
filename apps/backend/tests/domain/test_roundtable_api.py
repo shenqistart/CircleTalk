@@ -109,3 +109,15 @@ async def test_get_roundtable_session_restore(client: AsyncClient) -> None:
     response = await client.get("/api/roundtable/sessions/s1")
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
+
+
+@pytest.mark.asyncio
+async def test_legacy_roundtable_api_disabled_in_production(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.delenv("ENABLE_LEGACY_ROUNDTABLE_API", raising=False)
+
+    response = await client.get("/api/roundtable/personas")
+
+    assert response.status_code == 404

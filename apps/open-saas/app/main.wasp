@@ -143,6 +143,49 @@ query getAllTasksByUser {
 }
 //#endregion
 
+//#region Roundtable Operations
+query getRoundtablePersonas {
+  fn: import { getRoundtablePersonas } from "@src/roundtable/server/operations",
+  entities: [RoundtablePersona]
+}
+
+query getRoundtableSessions {
+  fn: import { getRoundtableSessions } from "@src/roundtable/server/operations",
+  entities: [RoundtableSession]
+}
+
+query getRoundtableSession {
+  fn: import { getRoundtableSession } from "@src/roundtable/server/operations",
+  entities: [RoundtableSession, RoundtableSessionPersona, RoundtablePersona, RoundtableMessage, RoundtableArtifact]
+}
+
+action recommendRoundtablePersonas {
+  fn: import { recommendRoundtablePersonas } from "@src/roundtable/server/operations",
+  entities: [RoundtablePersona]
+}
+
+action createRoundtableSession {
+  fn: import { createRoundtableSession } from "@src/roundtable/server/operations",
+  entities: [User, RoundtableSession, RoundtableSessionPersona, RoundtablePersona, RoundtableMessage]
+}
+
+action startRoundtableDiscussion {
+  fn: import { startRoundtableDiscussion } from "@src/roundtable/server/operations",
+  entities: [User, RoundtableSession, RoundtableUsage]
+}
+
+action submitRoundtableFollowUp {
+  fn: import { submitRoundtableFollowUp } from "@src/roundtable/server/operations",
+  entities: [User, RoundtableSession, RoundtableUsage]
+}
+
+api roundtableStream {
+  fn: import { roundtableStream } from "@src/roundtable/server/streamApi",
+  entities: [User, RoundtableSession, RoundtableUsage],
+  httpRoute: (GET, "/roundtable/stream")
+}
+//#endregion
+
 //#region Payment
 route PricingPageRoute { path: "/pricing", to: PricingPage }
 page PricingPage {

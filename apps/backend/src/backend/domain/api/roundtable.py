@@ -1,5 +1,6 @@
 """Roundtable decision advisor API."""
 
+import os
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -22,7 +23,28 @@ from backend.domain.schema.roundtable_schema import (
 )
 from backend.domain.service.roundtable_service import RoundtableService
 
-router = APIRouter(prefix="/roundtable", tags=["圆桌对话"])
+LEGACY_ROUNDTABLE_FLAG = "ENABLE_LEGACY_ROUNDTABLE_API"
+
+
+async def require_legacy_roundtable_enabled() -> None:
+    if _is_production_env() and not _is_true(os.getenv(LEGACY_ROUNDTABLE_FLAG)):
+        raise HTTPException(status_code=404, detail="Legacy roundtable API is disabled in production.")
+
+
+def _is_production_env() -> bool:
+    values = [os.getenv("APP_ENV"), os.getenv("ENVIRONMENT"), os.getenv("ENV"), os.getenv("PYTHON_ENV")]
+    return any((value or "").strip().lower() == "production" for value in values)
+
+
+def _is_true(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+router = APIRouter(
+    prefix="/roundtable",
+    tags=["圆桌对话"],
+    dependencies=[Depends(require_legacy_roundtable_enabled)],
+)
 
 
 @router.get("/personas")
