@@ -1,4 +1,3 @@
-import { faker } from "@faker-js/faker";
 import type { PrismaClient } from "@prisma/client";
 import { type User } from "wasp/entities";
 import {
@@ -20,40 +19,87 @@ export async function seedMockUsers(prismaClient: PrismaClient) {
 }
 
 function generateMockUsersData(numOfUsers: number): MockUserData[] {
-  return faker.helpers.multiple(generateMockUserData, { count: numOfUsers });
+  return Array.from({ length: numOfUsers }, (_, index) =>
+    generateMockUserData(index),
+  );
 }
 
-function generateMockUserData(): MockUserData {
-  const firstName = faker.person.firstName();
-  const lastName = faker.person.lastName();
+function generateMockUserData(index: number): MockUserData {
+  const firstName = pick(FIRST_NAMES);
+  const lastName = pick(LAST_NAMES);
   const subscriptionStatus =
-    faker.helpers.arrayElement<SubscriptionStatus | null>([
+    pick<SubscriptionStatus | null>([
       ...Object.values(SubscriptionStatus),
       null,
     ]);
   const now = new Date();
-  const createdAt = faker.date.past({ refDate: now });
-  const timePaid = faker.date.between({ from: createdAt, to: now });
-  const credits = subscriptionStatus
-    ? 0
-    : faker.number.int({ min: 0, max: 10 });
+  const createdAt = randomDateBetween(
+    new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000),
+    now,
+  );
+  const timePaid = randomDateBetween(createdAt, now);
+  const credits = subscriptionStatus ? 0 : randomInt(0, 10);
   const hasUserPaidOnStripe = !!subscriptionStatus || credits > 3;
   return {
-    email: faker.internet.email({ firstName, lastName }),
-    username: faker.internet.userName({ firstName, lastName }),
+    email: `${slugify(firstName)}.${slugify(lastName)}.${index}@example.com`,
+    username: `${slugify(firstName)}_${slugify(lastName)}_${index}`,
     createdAt,
     isAdmin: false,
     credits,
     subscriptionStatus,
     lemonSqueezyCustomerPortalUrl: null,
     paymentProcessorUserId: hasUserPaidOnStripe
-      ? `cus_test_${faker.string.uuid()}`
+      ? `cus_test_${randomId()}`
       : null,
     datePaid: hasUserPaidOnStripe
-      ? faker.date.between({ from: createdAt, to: timePaid })
+      ? randomDateBetween(createdAt, timePaid)
       : null,
     subscriptionPlan: subscriptionStatus
-      ? faker.helpers.arrayElement(getSubscriptionPaymentPlanIds())
+      ? pick(getSubscriptionPaymentPlanIds())
       : null,
   };
 }
+
+function pick<T>(items: T[]): T {
+  return items[randomInt(0, items.length - 1)];
+}
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomDateBetween(from: Date, to: Date): Date {
+  return new Date(randomInt(from.getTime(), to.getTime()));
+}
+
+function randomId(): string {
+  return Array.from({ length: 16 }, () => randomInt(0, 15).toString(16)).join(
+    "",
+  );
+}
+
+function slugify(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+const FIRST_NAMES = [
+  "Ada",
+  "Grace",
+  "Linus",
+  "Margaret",
+  "Alan",
+  "Katherine",
+  "Barbara",
+  "Donald",
+];
+
+const LAST_NAMES = [
+  "Lovelace",
+  "Hopper",
+  "Torvalds",
+  "Hamilton",
+  "Turing",
+  "Johnson",
+  "Liskov",
+  "Knuth",
+];
