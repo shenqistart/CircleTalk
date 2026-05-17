@@ -25,6 +25,7 @@ services:
     buildCommand: |
       npm ci --include=dev
       npm install -g @wasp.sh/wasp-cli@0.21.1
+      export PATH="$(npm config get prefix)/bin:$PATH"
       wasp build
       cd .wasp/out/server
       npm install --include=dev
@@ -83,6 +84,7 @@ services:
     buildCommand: |
       npm ci --include=dev
       npm install -g @wasp.sh/wasp-cli@0.21.1
+      export PATH="$(npm config get prefix)/bin:$PATH"
       wasp build
       REACT_APP_API_URL="$REACT_APP_API_URL" REACT_APP_CREDITS_10_PRICE_LABEL="$REACT_APP_CREDITS_10_PRICE_LABEL" npx vite build
     staticPublishPath: .wasp/out/web-app/build
