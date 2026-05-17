@@ -395,6 +395,9 @@ async function reservePendingUsage({
       },
     });
     if (activeUsage) {
+      if (activeUsage.userId === userId && activeUsage.streamTokenNonce) {
+        return activeUsage;
+      }
       throw new HttpError(409, "Roundtable session already has active work.");
     }
 

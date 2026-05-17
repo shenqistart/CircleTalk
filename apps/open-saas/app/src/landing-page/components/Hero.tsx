@@ -1,7 +1,6 @@
 import { Link as WaspRouterLink, routes } from "wasp/client/router";
 import { Button } from "../../client/components/ui/button";
-import openSaasBannerDark from "../../client/static/open-saas-banner-dark.svg";
-import openSaasBannerLight from "../../client/static/open-saas-banner-light.svg";
+import { PRODUCT_DESCRIPTION, PRODUCT_NAME } from "../../shared/common";
 
 export default function Hero() {
   return (
@@ -12,43 +11,59 @@ export default function Hero() {
         <div className="max-w-8xl mx-auto px-6 lg:px-8">
           <div className="lg:mb-18 mx-auto max-w-3xl text-center">
             <h1 className="text-foreground text-5xl font-bold sm:text-6xl">
-              Some <span className="italic">cool</span> words about{" "}
-              <span className="text-gradient-primary">your product</span>
+              Private AI roundtables for{" "}
+              <span className="text-gradient-primary">better decisions</span>
             </h1>
             <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg leading-8">
-              With some more exciting words about your product!
+              {PRODUCT_DESCRIPTION}
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Button size="lg" variant="outline" asChild>
                 <WaspRouterLink to={routes.PricingPageRoute.to}>
-                  Learn More
+                  View pricing
                 </WaspRouterLink>
               </Button>
               <Button size="lg" variant="default" asChild>
                 <WaspRouterLink to={routes.LoginRoute.to}>
-                  Get Started <span aria-hidden="true">→</span>
+                  Start a Circle <span aria-hidden="true">→</span>
                 </WaspRouterLink>
               </Button>
             </div>
           </div>
           <div className="mt-14 flow-root sm:mt-14">
-            <div className="m-2 hidden justify-center rounded-xl md:flex lg:-m-4 lg:rounded-2xl lg:p-4">
-              <img
-                src={openSaasBannerLight}
-                alt="App screenshot"
-                width={1000}
-                height={530}
-                loading="lazy"
-                className="rounded-md shadow-2xl ring-1 ring-gray-900/10 dark:hidden"
-              />
-              <img
-                src={openSaasBannerDark}
-                alt="App screenshot"
-                width={1000}
-                height={530}
-                loading="lazy"
-                className="hidden rounded-md shadow-2xl ring-1 ring-gray-900/10 dark:block"
-              />
+            <div
+              aria-label={`${PRODUCT_NAME} product preview`}
+              className="mx-auto hidden max-w-4xl rounded-xl border bg-card p-4 text-left shadow-2xl ring-1 ring-gray-900/10 md:block"
+            >
+              <div className="grid gap-3 md:grid-cols-[1fr_14rem]">
+                <div className="rounded-lg border bg-background p-5">
+                  <p className="text-xs font-medium uppercase text-muted-foreground">
+                    Circle prompt
+                  </p>
+                  <p className="mt-3 text-lg font-semibold">
+                    Should we migrate billing and login before the next launch?
+                  </p>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                    {["Strategist", "Operator", "Skeptic"].map((persona) => (
+                      <div
+                        className="rounded-md border bg-muted/40 p-3 text-sm"
+                        key={persona}
+                      >
+                        {persona}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-background p-5">
+                  <p className="text-xs font-medium uppercase text-muted-foreground">
+                    Usage
+                  </p>
+                  <p className="mt-3 text-3xl font-bold">1 credit</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Charged when the discussion completes.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

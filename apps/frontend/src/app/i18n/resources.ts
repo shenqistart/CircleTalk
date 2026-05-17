@@ -18,12 +18,12 @@ export const resources = {
         advisor: 'Roundtable decision advisor',
         artifact: {
           debateMap: 'Debate map',
-          empty: 'Decision artifacts appear after the roundtable stream completes.',
+          empty: 'Conclusion appears after the roundtable stream completes.',
           memo: 'Memo',
           recommendation: 'Recommendation',
           reasons: 'Reasons',
           step: 'Step 4',
-          title: 'Decision artifacts',
+          title: 'Conclusion',
         },
         demo: {
           artifact: {
@@ -32,7 +32,7 @@ export const resources = {
             reasons: ['Preserve options', 'Expose risks early', 'Replace abstract debate with real feedback'],
           },
           fallbackPrompt: 'Local demo session',
-          moderatorPending: 'Moderator: start the discussion stream first. The full transcript and artifacts will refresh when it finishes.',
+          moderatorPending: 'Moderator: start the discussion stream first. The full transcript and conclusion will refresh when it finishes.',
           personaLine: '{{name}}: clarify goals, constraints, and unacceptable risks before deciding whether to proceed.',
           position: 'Supports validating with a small pilot before committing full resources.',
         },
@@ -46,10 +46,10 @@ export const resources = {
           promptPlaceholder: 'Example: Should I move my team from outsourced delivery to an owned product this year?',
           recommend: 'Recommend personas',
           step: 'Step 1',
-          title: 'Decision prompt',
+          title: 'Question',
         },
         hero: {
-          description: 'Enter a decision prompt, choose personas, then generate Opening, Rebuttal, Closing, and moderator artifacts.',
+          description: 'Enter a question, choose personas, then generate Opening, Rebuttal, Closing, and moderator conclusion.',
           title: 'Roundtable decision advisor',
         },
         picker: {
@@ -72,6 +72,7 @@ export const resources = {
         },
         session: {
           cancelStream: 'Cancel stream',
+          empty: 'Create a session before starting the discussion stream.',
           messages: 'Messages',
           personas: 'Personas',
           selectedPersonas: 'Selected personas: {{names}}',
@@ -82,16 +83,42 @@ export const resources = {
         },
         status: {
           persistence: 'Postgres persistence',
-          persistenceDescription: 'Session, transcript, and artifacts refresh after completion.',
-          textStream: 'Text Stream',
+          persistenceDescription: 'Session, transcript, and conclusion refresh after completion.',
+          textStream: 'Discussion timeline',
+        },
+        stepper: {
+          label: 'Roundtable progress',
+          steps: {
+            artifacts: {
+              description: 'Review the conclusion',
+              title: 'Conclusion',
+            },
+            discussion: {
+              description: 'Stream debate and follow up',
+              title: 'Discussion',
+            },
+            personas: {
+              description: 'Pick advisor perspectives',
+              title: 'Personas',
+            },
+            prompt: {
+              description: 'Frame the question',
+              title: 'Question',
+            },
+          },
+        },
+        summary: {
+          currentStep: 'Current',
+          title: 'Workspace summary',
         },
         timeline: {
-          empty: 'Create a session to start the discussion stream.',
-          live: 'Live text stream',
+          empty: 'Create a session to start the discussion timeline.',
           messageCount: '{{count}} messages',
+          revealing: 'Adding discussion items',
           step: 'Step 3',
-          streaming: 'Text Stream active',
+          streaming: 'Discussion in progress',
           title: 'Discussion timeline',
+          waiting: 'Waiting for the next discussion item',
         },
       },
       users: {
@@ -137,12 +164,12 @@ export const resources = {
         advisor: '圆桌对话决策参谋',
         artifact: {
           debateMap: '争论地图',
-          empty: '三件套将在圆桌流完成后显示。',
+          empty: '结论将在圆桌流完成后显示。',
           memo: '备忘录',
           recommendation: '建议',
           reasons: '理由',
           step: '第 4 步',
-          title: '决策三件套',
+          title: '结论',
         },
         demo: {
           artifact: {
@@ -151,7 +178,7 @@ export const resources = {
             reasons: ['保留选择权', '尽早暴露风险', '用真实反馈替代抽象争论'],
           },
           fallbackPrompt: '本地演示会话',
-          moderatorPending: '主持人：请先启动讨论流。完成后系统会拉取三件套与完整记录。',
+          moderatorPending: '主持人：请先启动讨论流。完成后系统会拉取结论与完整记录。',
           personaLine: '{{name}}：先明确目标、约束与不可承受风险，再决定是否推进。',
           position: '支持先做小规模验证，再投入完整资源。',
         },
@@ -165,10 +192,10 @@ export const resources = {
           promptPlaceholder: '例如：我是否应该在今年把团队从外包交付转成自研产品？',
           recommend: '推荐人物',
           step: '第 1 步',
-          title: '决策题',
+          title: '问题',
         },
         hero: {
-          description: '输入决策题，选择人物，生成开场、反驳、总结与主持人三件套。',
+          description: '输入问题，选择人物，生成开场、反驳、总结与主持人结论。',
           title: '圆桌对话决策参谋',
         },
         picker: {
@@ -191,6 +218,7 @@ export const resources = {
         },
         session: {
           cancelStream: '取消流',
+          empty: '创建会话后即可开始讨论流。',
           messages: '消息',
           personas: '人物',
           selectedPersonas: '已选人物：{{names}}',
@@ -201,16 +229,42 @@ export const resources = {
         },
         status: {
           persistence: 'Postgres 持久化',
-          persistenceDescription: '会话、记录与三件套完成后刷新。',
-          textStream: '文本流',
+          persistenceDescription: '会话、记录与结论完成后刷新。',
+          textStream: '讨论时间线',
+        },
+        stepper: {
+          label: '圆桌流程进度',
+          steps: {
+            artifacts: {
+              description: '查看结论',
+              title: '结论',
+            },
+            discussion: {
+              description: '流式讨论与追问',
+              title: '讨论',
+            },
+            personas: {
+              description: '选择参谋视角',
+              title: '人物',
+            },
+            prompt: {
+              description: '明确问题',
+              title: '问题',
+            },
+          },
+        },
+        summary: {
+          currentStep: '当前',
+          title: '工作台概览',
         },
         timeline: {
-          empty: '创建会话后开始讨论流。',
-          live: '实时文本流',
+          empty: '创建会话后开始讨论时间线。',
           messageCount: '{{count}} 条消息',
+          revealing: '正在加入讨论条目',
           step: '第 3 步',
-          streaming: '文本流进行中',
+          streaming: '讨论生成中',
           title: '讨论时间线',
+          waiting: '等待下一条讨论',
         },
       },
       users: {

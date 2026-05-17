@@ -9,7 +9,8 @@ import { cn } from "../../client/utils";
 import { Feature } from "./Features";
 import SectionTitle from "./SectionTitle";
 
-export interface GridFeature extends Omit<Feature, "icon"> {
+export interface GridFeature extends Omit<Feature, "icon" | "href"> {
+  href?: string;
   icon?: React.ReactNode;
   emoji?: string;
   direction?: "col" | "row" | "col-reverse" | "row-reverse";
@@ -31,7 +32,7 @@ const FeaturesGrid = ({ features, className = "" }: FeaturesGridProps) => {
     >
       <SectionTitle
         title="Features"
-        description="These are some of the features of the product."
+        description="The core workflow for private AI roundtables, from login to credits."
       />
       <div
         className={cn(

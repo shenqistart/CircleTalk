@@ -1,16 +1,22 @@
 import { Sparkles, Users } from 'lucide-react'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 interface DecisionPromptFormProps {
+  decisionPrompt: string
   isBusy: boolean
+  onDecisionPromptChange: (value: string) => void
   onCreate: (decisionPrompt: string) => Promise<void>
   onRecommend: (decisionPrompt: string) => Promise<void>
 }
 
-export function DecisionPromptForm({ isBusy, onCreate, onRecommend }: DecisionPromptFormProps) {
+export function DecisionPromptForm({
+  decisionPrompt,
+  isBusy,
+  onCreate,
+  onDecisionPromptChange,
+  onRecommend,
+}: DecisionPromptFormProps) {
   const { t } = useTranslation()
-  const [decisionPrompt, setDecisionPrompt] = useState('')
   const trimmedPrompt = decisionPrompt.trim()
   const canSubmit = trimmedPrompt.length > 0 && !isBusy
 
@@ -24,7 +30,6 @@ export function DecisionPromptForm({ isBusy, onCreate, onRecommend }: DecisionPr
     <form className="min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm" onSubmit={handleSubmit}>
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase text-emerald-700">{t('roundtable.form.step')}</p>
           <h2 className="mt-1 text-lg font-semibold text-zinc-950">{t('roundtable.form.title')}</h2>
         </div>
         <span className="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">{trimmedPrompt.length}/4000</span>
@@ -34,7 +39,7 @@ export function DecisionPromptForm({ isBusy, onCreate, onRecommend }: DecisionPr
         maxLength={4000}
         placeholder={t('roundtable.form.promptPlaceholder')}
         value={decisionPrompt}
-        onChange={(event) => setDecisionPrompt(event.target.value)}
+        onChange={(event) => onDecisionPromptChange(event.target.value)}
       />
       <div className="mt-3 flex flex-wrap gap-3">
         <button

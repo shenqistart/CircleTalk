@@ -27,17 +27,13 @@ export const roundtableStream: RoundtableStream = async (
   response,
   context,
 ) => {
-  const userId = requireUserId(context);
+  applyStreamCorsHeaders(request, response);
   const token = getQueryString(request.query.token);
   if (!token) {
     throw new HttpError(401, "Roundtable stream token is required.");
   }
 
   const claims = verifyRoundtableStreamToken(token);
-  if (claims.userId !== userId) {
-    throw new HttpError(401, "Roundtable stream token user mismatch.");
-  }
-
   const { usage, session } = await consumeStreamToken(claims);
   if (usage.operation !== claims.purpose) {
     throw new HttpError(401, "Roundtable stream token purpose mismatch.");
@@ -66,7 +62,7 @@ export const roundtableStream: RoundtableStream = async (
       usage.operation === "follow_up"
         ? "/internal/roundtable/follow-up/stream"
         : "/internal/roundtable/discussions/stream",
-      buildWorkerRequest(usage, session, userId),
+      buildWorkerRequest(usage, session, claims.userId),
       abortController.signal,
     );
     await proxyAndPersistWorkerStream(workerResponse, response, usage, session.id);
@@ -95,6 +91,19 @@ export const roundtableStream: RoundtableStream = async (
     response.end();
   }
 };
+
+function applyStreamCorsHeaders(
+  request: Parameters<RoundtableStream>[0],
+  response: Parameters<RoundtableStream>[1],
+) {
+  const origin = request.headers.origin;
+  if (typeof origin === "string") {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Vary", "Origin");
+  }
+  response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+}
 
 async function proxyAndPersistWorkerStream(
   workerResponse: Response,
@@ -365,13 +374,6 @@ function toSessionView(session: any): RoundtableSessionView {
     })),
     artifact: session.artifacts[0] ?? null,
   };
-}
-
-function requireUserId(context: { user?: { id: string } | null }) {
-  if (!context.user) {
-    throw new HttpError(401, "Only authenticated users can stream Roundtable.");
-  }
-  return context.user.id;
 }
 
 function getQueryString(value: unknown) {

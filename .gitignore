@@ -50,6 +50,12 @@ playwright-report/
 
 # VitePress
 docs/.vitepress/cache/
+docs/.vitepress/dist/
+
+# Understand-Anything local scratch
+.understand-anything/intermediate/
+.understand-anything/tmp/
+.understand-anything/diff-overlay.json
 
 # Git worktree
 .worktrees/

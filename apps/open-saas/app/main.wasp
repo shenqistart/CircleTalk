@@ -1,33 +1,22 @@
-app OpenSaaS {
+app CircleRoundtable {
   wasp: {
     version: "^0.21.0"
   },
 
-  title: "My Open SaaS App",
+  title: "Circle Roundtable",
 
   head: [
     "<link rel='icon' href='/favicon.ico' />",
 
-    "<meta name='description' content='Your apps main description and features.' />",
-    "<meta name='author' content='Your (App) Name' />",
-    "<meta name='keywords' content='saas, solution, product, app, service' />",
+    "<meta name='description' content='Create private AI roundtables, compare expert perspectives, and pay for completed discussions with credits.' />",
+    "<meta name='author' content='Circle Roundtable' />",
+    "<meta name='keywords' content='ai roundtable, decision making, ai advisors, credits, collaboration' />",
 
     "<meta property='og:type' content='website' />",
-    "<meta property='og:title' content='Your Open SaaS App' />",
-    "<meta property='og:site_name' content='Your Open SaaS App' />",
-    "<meta property='og:url' content='https://your-saas-app.com' />",
-    "<meta property='og:description' content='Your apps main description and features.' />",
-    "<meta property='og:image' content='https://your-saas-app.com/public-banner.webp' />",
-    "<meta name='twitter:image' content='https://your-saas-app.com/public-banner.webp' />",
-    "<meta name='twitter:image:width' content='800' />",
-    "<meta name='twitter:image:height' content='400' />",
+    "<meta property='og:title' content='Circle Roundtable' />",
+    "<meta property='og:site_name' content='Circle Roundtable' />",
+    "<meta property='og:description' content='Create private AI roundtables, compare expert perspectives, and pay for completed discussions with credits.' />",
     "<meta name='twitter:card' content='summary_large_image' />",
-    // TODO: You can put your Plausible analytics scripts below (https://docs.opensaas.sh/guides/analytics/):
-    // NOTE: Plausible does not use Cookies, so you can simply add the scripts here.
-    // Google, on the other hand, does, so you must instead add the script dynamically
-    // via the Cookie Consent component after the user clicks the "Accept" cookies button.
-    "<script defer data-domain='<your-site-id>' src='https://plausible.io/js/script.js'></script>",  // for production
-    "<script defer data-domain='<your-site-id>' src='https://plausible.io/js/script.local.js'></script>",  // for development
   ],
 
   // 🔐 Auth out of the box! https://wasp.sh/docs/auth/overview
@@ -216,7 +205,7 @@ api paymentsWebhook {
 }
 //#endregion
 
-//#region File Upload
+//#region Storage
 route FileUploadRoute { path: "/file-upload", to: FileUploadPage }
 page FileUploadPage {
   authRequired: true,

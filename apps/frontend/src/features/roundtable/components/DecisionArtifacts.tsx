@@ -19,7 +19,6 @@ export function DecisionArtifacts({ artifact }: DecisionArtifactsProps) {
   return (
     <section className="min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
       <div className="mb-4">
-        <p className="text-xs font-semibold uppercase text-emerald-700">{t('roundtable.artifact.step')}</p>
         <h2 className="mt-1 text-lg font-semibold text-zinc-950">{t('roundtable.artifact.title')}</h2>
       </div>
       <div className="grid min-w-0 gap-4 lg:grid-cols-3">

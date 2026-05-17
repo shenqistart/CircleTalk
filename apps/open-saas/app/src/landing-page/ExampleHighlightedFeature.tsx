@@ -5,8 +5,8 @@ import HighlightedFeature from "./components/HighlightedFeature";
 export default function AIReady() {
   return (
     <HighlightedFeature
-      name="Example Feature Highlight"
-      description="Yo! Use this component to show off the most important features in your app."
+      name="From question to decision memo"
+      description="Circle Roundtable turns a high-stakes prompt into a streamed discussion and a saved decision artifact."
       highlightedComponent={<AIReadyExample />}
       direction="row-reverse"
     />

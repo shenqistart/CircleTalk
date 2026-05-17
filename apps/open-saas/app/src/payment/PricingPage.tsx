@@ -34,22 +34,22 @@ interface PaymentPlanCard {
 
 export const paymentPlanCards: Record<PaymentPlanId, PaymentPlanCard> = {
   [PaymentPlanId.Hobby]: {
-    name: prettyPaymentPlanName(PaymentPlanId.Hobby),
+    name: "Starter",
     price: "$9.99",
-    description: "All you need to get started",
-    features: ["Limited monthly usage", "Basic support"],
+    description: "For trying Circle Roundtable with a small team.",
+    features: ["Monthly Circle usage", "Google login", "Saved session history"],
   },
   [PaymentPlanId.Pro]: {
-    name: prettyPaymentPlanName(PaymentPlanId.Pro),
+    name: "Pro",
     price: "$19.99",
-    description: "Our most popular plan",
-    features: ["Unlimited monthly usage", "Priority customer support"],
+    description: "For regular decision work and deeper follow-ups.",
+    features: ["Higher monthly usage", "Priority support", "Follow-up questions"],
   },
   [PaymentPlanId.Credits10]: {
     name: prettyPaymentPlanName(PaymentPlanId.Credits10),
     price: "$9.99",
-    description: "One-time purchase of 10 credits for your account",
-    features: ["Use credits for e.g. OpenAI API calls", "No expiration date"],
+    description: "One-time credit pack for additional Circle discussions.",
+    features: ["10 discussion credits", "No subscription required", "No expiration date"],
   },
 };
 
@@ -121,16 +121,12 @@ const PricingPage = () => {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div id="pricing" className="mx-auto max-w-4xl text-center">
           <h2 className="text-foreground mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-            Pick your <span className="text-primary">pricing</span>
+            Choose your <span className="text-primary">Circle plan</span>
           </h2>
         </div>
         <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-center text-lg leading-8">
-          Choose between Stripe, LemonSqueezy or Polar as your payment provider.
-          Just add your Product IDs! Try it out below with test credit card
-          number <br />
-          <span className="bg-muted text-muted-foreground rounded-md px-2 py-1 font-mono text-sm">
-            4242 4242 4242 4242 4242
-          </span>
+          Subscribe for recurring Circle usage or buy credits when you need more
+          completed roundtable discussions.
         </p>
         {errorMessage && (
           <Alert variant="destructive" className="mt-8">
@@ -223,7 +219,7 @@ const PricingPage = () => {
                     className="w-full"
                     disabled={isPaymentLoading}
                   >
-                    {!!user ? "Buy plan" : "Log in to buy plan"}
+                    {!!user ? "Choose plan" : "Log in to choose"}
                   </Button>
                 )}
               </CardFooter>

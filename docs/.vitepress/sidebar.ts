@@ -17,6 +17,16 @@ export const sidebar = [
     ],
   },
   {
+    text: 'Agent 协作',
+    collapsed: false,
+    items: [
+      { text: '双栈协作总览', link: '/agents/overview' },
+      { text: '统一工作流', link: '/agents/workflow' },
+      { text: 'Codex 说明', link: '/agents/codex' },
+      { text: 'Understand-Anything 项目梳理', link: '/understand-anything' },
+    ],
+  },
+  {
     text: '后端架构',
     collapsed: false,
     items: [

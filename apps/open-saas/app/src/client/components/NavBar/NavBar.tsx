@@ -13,11 +13,10 @@ import {
 import { throttleWithTrailingInvocation } from "../../../shared/utils";
 import { UserDropdown } from "../../../user/UserDropdown";
 import { UserMenuItems } from "../../../user/UserMenuItems";
-import { useIsLandingPage } from "../../hooks/useIsLandingPage";
+import { PRODUCT_NAME } from "../../../shared/common";
 import logo from "../../static/logo.webp";
 import { cn } from "../../utils";
 import DarkModeSwitcher from "../DarkModeSwitcher";
-import { Announcement } from "./Announcement";
 
 export interface NavigationItem {
   name: string;
@@ -30,7 +29,6 @@ export default function NavBar({
   navigationItems: NavigationItem[];
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const isLandingPage = useIsLandingPage();
 
   useEffect(() => {
     const throttledHandler = throttleWithTrailingInvocation(() => {
@@ -47,7 +45,6 @@ export default function NavBar({
 
   return (
     <>
-      {isLandingPage && <Announcement />}
       <header
         className={cn(
           "sticky top-0 z-50 transition-all duration-300",
@@ -87,7 +84,7 @@ export default function NavBar({
                     },
                   )}
                 >
-                  Your SaaS
+                  {PRODUCT_NAME}
                 </span>
               </WaspRouterLink>
 
@@ -180,7 +177,7 @@ function NavBarMobileMenu({
           <SheetHeader>
             <SheetTitle className="flex items-center">
               <WaspRouterLink to={routes.LandingPageRoute.to}>
-                <span className="sr-only">Your SaaS</span>
+                <span className="sr-only">{PRODUCT_NAME}</span>
                 <NavLogo isScrolled={false} />
               </WaspRouterLink>
             </SheetTitle>
@@ -251,6 +248,6 @@ const NavLogo = ({ isScrolled }: { isScrolled: boolean }) => (
       "size-7": isScrolled,
     })}
     src={logo}
-    alt="Your SaaS App"
+    alt={PRODUCT_NAME}
   />
 );

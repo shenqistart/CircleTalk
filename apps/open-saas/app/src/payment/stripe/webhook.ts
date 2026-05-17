@@ -41,7 +41,7 @@ export const stripeWebhook: PaymentsWebhook = async (
     // If you'd like to handle more events, you can add more cases below.
     // When deploying your app, you configure your webhook in the Stripe dashboard
     // to only send the events that you're handling above.
-    // See: https://docs.opensaas.sh/guides/deploying/#setting-up-your-stripe-webhook
+      // Configure the production webhook to send only the events handled here.
     switch (event.type) {
       case "invoice.paid":
         await handleInvoicePaid(event, prismaUserDelegate);

@@ -1,6 +1,5 @@
-import { Database, Radio } from 'lucide-react'
+import { Database } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { AI_SDK_TEXT_STREAM_PROTOCOL } from '@/features/roundtable/hooks/useRoundtableChat'
 
 export function DeploymentStatusBanner() {
   const { t } = useTranslation()

@@ -28,7 +28,6 @@ export function PersonaPicker({
     <section className="min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase text-emerald-700">{t('roundtable.picker.step')}</p>
           <h2 className="mt-1 text-lg font-semibold text-zinc-950">{t('roundtable.picker.title')}</h2>
           <p className="mt-1 text-xs text-zinc-500">{t('roundtable.picker.selectedCount', { count: selectedCount })}</p>
         </div>

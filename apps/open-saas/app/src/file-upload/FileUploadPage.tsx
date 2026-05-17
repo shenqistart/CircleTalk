@@ -173,7 +173,7 @@ export default function FileUploadPage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
             <h2 className="text-foreground mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-              <span className="text-primary">AWS</span> File Upload
+              Private File Storage
             </h2>
           </div>
           <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-center text-lg leading-8">
