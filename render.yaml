@@ -1,6 +1,10 @@
 # Render blueprint notes:
-# CircleTalk production is a Wasp/Open SaaS app plus a private FastAPI AI
-# Worker. The legacy apps/frontend Vite app is intentionally not deployed.
+# CircleTalk production is a Wasp/Open SaaS app plus a FastAPI AI Worker.
+# This Blueprint is configured for low-cost/free Render validation: the Worker
+# is a public free web service protected by AI_WORKER_SHARED_SECRET. Before a
+# real production launch, switch circletalk-ai-worker back to type: pserv and
+# plan: starter, and point AI_WORKER_URL back to Render private networking.
+# The legacy apps/frontend Vite app is intentionally not deployed.
 #
 # Wasp 0.21 builds deployable code into apps/open-saas/app/.wasp/out. The
 # generated API server and static web client are separate deployable units.
@@ -15,7 +19,7 @@ services:
   - type: web
     name: circletalk-wasp-server
     runtime: node
-    plan: starter
+    plan: free
     branch: codex/migrate-open-saas-google-stripe
     rootDir: apps/open-saas/app
     buildCommand: |
@@ -65,7 +69,7 @@ services:
       - key: ADMIN_EMAILS
         sync: false
       - key: AI_WORKER_URL
-        value: http://circletalk-ai-worker:8000
+        value: https://circletalk-ai-worker.onrender.com
       - key: AI_WORKER_SHARED_SECRET
         sync: false
       - key: ROUNDTABLE_STREAM_TOKEN_SECRET
@@ -94,13 +98,14 @@ services:
         source: /*
         destination: /index.html
 
-  - type: pserv
+  - type: web
     name: circletalk-ai-worker
     runtime: docker
-    plan: starter
+    plan: free
     branch: codex/migrate-open-saas-google-stripe
     dockerfilePath: ./apps/backend/Dockerfile
     dockerContext: .
+    healthCheckPath: /health
     envVars:
       - key: APP_ENV
         value: production
