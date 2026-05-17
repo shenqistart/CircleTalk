@@ -45,8 +45,10 @@ export const generateCheckoutSession: GenerateCheckoutSession<
   const { session } = await paymentProcessor.createCheckoutSession({
     userId,
     userEmail,
+    paymentPlanId,
     paymentPlan,
     prismaUserDelegate: context.entities.User,
+    prismaPaymentOrderDelegate: context.entities.PaymentOrder,
   });
 
   return {

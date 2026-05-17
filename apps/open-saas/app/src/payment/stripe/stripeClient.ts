@@ -1,5 +1,4 @@
 import Stripe from "stripe";
-import { requireNodeEnvVar } from "../../server/utils";
 
 /**
  * The Stripe client API version.
@@ -25,6 +24,8 @@ import { requireNodeEnvVar } from "../../server/utils";
  */
 const STRIPE_API_VERSION = "2025-04-30.basil";
 
-export const stripeClient = new Stripe(requireNodeEnvVar("STRIPE_API_KEY"), {
+const stripeApiKey = process.env.STRIPE_API_KEY;
+
+export const stripeClient = new Stripe(stripeApiKey ?? "__stripe_key_missing__", {
   apiVersion: STRIPE_API_VERSION,
 });

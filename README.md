@@ -5,7 +5,7 @@ CircleTalk is a production-oriented SaaS for private AI roundtable discussions. 
 ## Production Architecture
 
 - `apps/open-saas/app` is the only production user-facing application.
-- Wasp owns Google Auth, users, Stripe billing, credits, roundtable sessions, messages, artifacts, usage records, and admin operations.
+- Wasp owns Google Auth, users, payments/billing, credits, roundtable sessions, messages, artifacts, usage records, and admin operations.
 - `apps/backend` is a private FastAPI AI Worker. It accepts already-authorized server-to-server requests from Wasp and streams Roundtable worker SSE events.
 - The Worker does not own browser auth, payment state, credit settlement, or session persistence.
 - Worker internal endpoints under `/internal/roundtable/*` require `AI_WORKER_SHARED_SECRET`.
@@ -58,12 +58,12 @@ Google OAuth:
 - Configure the Wasp callback URL for your deployment.
 - Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the Wasp server environment.
 
-Stripe:
+Payments:
 
-- Create subscription prices for Hobby and Pro.
-- Create a one-time payment price for `Credits10`.
-- Set `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `PAYMENTS_HOBBY_SUBSCRIPTION_PLAN_ID`, `PAYMENTS_PRO_SUBSCRIPTION_PLAN_ID`, and `PAYMENTS_CREDITS_10_PLAN_ID`.
-- Configure the webhook endpoint at `/payments-webhook`.
+- Production defaults to `PAYMENT_PROVIDER=zpay` for Alipay one-time credits.
+- Set `ZPAY_PID`, `ZPAY_KEY`, `ZPAY_NOTIFY_URL`, `ZPAY_RETURN_URL`, and `PAYMENTS_CREDITS_10_AMOUNT_CNY=9.90`.
+- Configure ZPAY notify URL to `/payments/zpay/notify`; local notify testing needs a public tunnel or preview deployment.
+- Stripe code is retained as an optional fallback with `PAYMENT_PROVIDER=stripe`, but it is not the default production payment path.
 
 Secrets:
 
@@ -92,10 +92,12 @@ The old `apps/frontend` can still be run manually for archaeology, but it is not
 
 ## Deployment
 
-Production requires two services:
+Production requires these Render resources:
 
-- Wasp/Open SaaS web app from `apps/open-saas/app`.
+- Wasp/Open SaaS API server from `apps/open-saas/app`.
+- Wasp/Open SaaS static client from `apps/open-saas/app`.
 - Private FastAPI AI Worker from `apps/backend`.
+- Postgres for Wasp persistence.
 
 See [deployment docs](docs/deployment.md) and [launch checklist](docs/launch-checklist.md) before going live.
 

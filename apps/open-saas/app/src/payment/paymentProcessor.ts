@@ -2,14 +2,17 @@ import { PrismaClient } from "@prisma/client";
 import { User } from "wasp/entities";
 import type { MiddlewareConfigFn } from "wasp/server";
 import type { PaymentsWebhook } from "wasp/server/api";
-import type { PaymentPlan } from "./plans";
+import type { PaymentPlan, PaymentPlanId } from "./plans";
 import { stripePaymentProcessor } from "./stripe/paymentProcessor";
+import { zpayPaymentProcessor } from "./zpay/paymentProcessor";
 
 export interface CreateCheckoutSessionArgs {
   userId: User["id"];
   userEmail: NonNullable<User["email"]>;
+  paymentPlanId: PaymentPlanId;
   paymentPlan: PaymentPlan;
   prismaUserDelegate: PrismaClient["user"];
+  prismaPaymentOrderDelegate: PrismaClient["paymentOrder"];
 }
 
 export interface FetchCustomerPortalUrlArgs {
@@ -18,7 +21,7 @@ export interface FetchCustomerPortalUrlArgs {
 }
 
 export interface PaymentProcessor {
-  id: "stripe" | "lemonsqueezy" | "polar";
+  id: "stripe" | "lemonsqueezy" | "polar" | "zpay";
   createCheckoutSession: (
     args: CreateCheckoutSessionArgs,
   ) => Promise<{ session: { id: string; url: string } }>;
@@ -29,10 +32,19 @@ export interface PaymentProcessor {
   webhookMiddlewareConfigFn: MiddlewareConfigFn;
 }
 
-/**
- * Choose which payment processor you'd like to use, then delete the
- * other payment processor code that you're not using  from `/src/payment`
- */
-export const paymentProcessor: PaymentProcessor = stripePaymentProcessor;
+export const paymentProcessor: PaymentProcessor =
+  getConfiguredPaymentProcessor();
 // export const paymentProcessor: PaymentProcessor = lemonSqueezyPaymentProcessor;
 // export const paymentProcessor: PaymentProcessor = polarPaymentProcessor;
+
+function getConfiguredPaymentProcessor(): PaymentProcessor {
+  const provider = (process.env.PAYMENT_PROVIDER ?? "zpay").toLowerCase();
+  switch (provider) {
+    case "stripe":
+      return stripePaymentProcessor;
+    case "zpay":
+      return zpayPaymentProcessor;
+    default:
+      throw new Error(`Unsupported PAYMENT_PROVIDER: ${provider}`);
+  }
+}

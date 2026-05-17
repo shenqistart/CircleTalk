@@ -1,6 +1,9 @@
 # Render blueprint notes:
-# CircleTalk production is a two-service SaaS. Do not deploy only FastAPI +
-# Postgres and call it complete; the production web app lives in apps/open-saas/app.
+# CircleTalk production is a Wasp/Open SaaS app plus a private FastAPI AI
+# Worker. The legacy apps/frontend Vite app is intentionally not deployed.
+#
+# Wasp 0.21 builds deployable code into apps/open-saas/app/.wasp/out. The
+# generated API server and static web client are separate deployable units.
 
 databases:
   - name: circletalk-postgres
@@ -10,48 +13,92 @@ databases:
 
 services:
   - type: web
-    name: circletalk-wasp-web
+    name: circletalk-wasp-server
     runtime: node
     plan: starter
+    branch: codex/migrate-open-saas-google-stripe
     rootDir: apps/open-saas/app
-    buildCommand: wasp build
-    startCommand: cd .wasp/build && npm install && npm run start
+    buildCommand: |
+      npm ci --include=dev
+      npm install -g @wasp.sh/wasp-cli@0.21.1
+      wasp build
+      cd .wasp/out/server
+      npm install --include=dev
+      ../../../node_modules/.bin/prisma generate --schema=../db/schema.prisma
+      npm run bundle
+    startCommand: cd .wasp/out/server && PATH="$PWD/../../../node_modules/.bin:$PATH" npm run start-production
     envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: NODE_ENV
+        value: production
       - key: DATABASE_URL
         fromDatabase:
           name: circletalk-postgres
           property: connectionString
       - key: WASP_SERVER_URL
-        sync: false
+        value: https://circletalk-wasp-server.onrender.com
+      - key: WASP_WEB_CLIENT_URL
+        value: https://circletalk-wasp-client.onrender.com
       - key: JWT_SECRET
         generateValue: true
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
-      - key: STRIPE_API_KEY
+      - key: PAYMENT_PROVIDER
+        value: zpay
+      - key: ZPAY_PID
         sync: false
-      - key: STRIPE_WEBHOOK_SECRET
+      - key: ZPAY_KEY
         sync: false
-      - key: PAYMENTS_HOBBY_SUBSCRIPTION_PLAN_ID
-        sync: false
-      - key: PAYMENTS_PRO_SUBSCRIPTION_PLAN_ID
-        sync: false
-      - key: PAYMENTS_CREDITS_10_PLAN_ID
-        sync: false
+      - key: ZPAY_SUBMIT_URL
+        value: https://zpayz.cn/submit.php
+      - key: ZPAY_API_URL
+        value: https://zpayz.cn/api.php
+      - key: ZPAY_NOTIFY_URL
+        value: https://circletalk-wasp-server.onrender.com/payments/zpay/notify
+      - key: ZPAY_RETURN_URL
+        value: https://circletalk-wasp-client.onrender.com/checkout
+      - key: PAYMENTS_CREDITS_10_AMOUNT_CNY
+        value: "9.90"
       - key: ADMIN_EMAILS
         sync: false
       - key: AI_WORKER_URL
-        sync: false
+        value: http://circletalk-ai-worker:8000
       - key: AI_WORKER_SHARED_SECRET
         sync: false
       - key: ROUNDTABLE_STREAM_TOKEN_SECRET
-        sync: false
+        generateValue: true
+
+  - type: web
+    name: circletalk-wasp-client
+    runtime: static
+    branch: codex/migrate-open-saas-google-stripe
+    rootDir: apps/open-saas/app
+    buildCommand: |
+      npm ci --include=dev
+      npm install -g @wasp.sh/wasp-cli@0.21.1
+      wasp build
+      REACT_APP_API_URL="$REACT_APP_API_URL" REACT_APP_CREDITS_10_PRICE_LABEL="$REACT_APP_CREDITS_10_PRICE_LABEL" npx vite build
+    staticPublishPath: .wasp/out/web-app/build
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: REACT_APP_API_URL
+        value: https://circletalk-wasp-server.onrender.com
+      - key: REACT_APP_CREDITS_10_PRICE_LABEL
+        value: "¥9.90"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
   - type: pserv
     name: circletalk-ai-worker
     runtime: docker
     plan: starter
+    branch: codex/migrate-open-saas-google-stripe
     dockerfilePath: ./apps/backend/Dockerfile
     dockerContext: .
     healthCheckPath: /health
@@ -61,9 +108,9 @@ services:
       - key: AI_WORKER_SHARED_SECRET
         sync: false
       - key: ALLOWED_ORIGINS
-        sync: false
+        value: https://circletalk-wasp-client.onrender.com
       - key: ENABLE_LEGACY_ROUNDTABLE_API
-        value: false
+        value: "false"
       - key: CONFIG_PATH
         value: /app/apps/backend/config.yaml
       - key: DATABASE_URL
@@ -71,7 +118,7 @@ services:
           name: circletalk-postgres
           property: connectionString
       - key: ROUNDTABLE_LLM_ENABLED
-        value: true
+        value: "true"
       - key: ROUNDTABLE_LLM_MODEL
         sync: false
       - key: OPENAI_API_KEY

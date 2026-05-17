@@ -26,10 +26,7 @@ export function assertCanReserveRoundtableUsage(
     return creditDebitAmount;
   }
   if (user.credits - outstandingReservedCredits < creditDebitAmount) {
-    throw new HttpError(
-      402,
-      "User has no subscription and is out of credits.",
-    );
+    throw new HttpError(402, "User has no subscription and is out of credits.");
   }
   return creditDebitAmount;
 }

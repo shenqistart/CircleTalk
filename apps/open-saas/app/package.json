@@ -1,6 +1,9 @@
 {
   "name": "opensaas",
   "type": "module",
+  "scripts": {
+    "test:zpay": "vitest run tests/payment/zpay.test.ts"
+  },
   "workspaces": [
     ".wasp/out/*",
     ".wasp/out/sdk/wasp"
@@ -53,6 +56,7 @@
     "@types/react": "^19.2.7",
     "prisma": "5.19.1",
     "typescript": "5.8.2",
-    "vite": "^7.0.6"
+    "vite": "^7.0.6",
+    "vitest": "^4.1.6"
   }
 }

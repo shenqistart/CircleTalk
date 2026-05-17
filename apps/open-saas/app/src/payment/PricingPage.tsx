@@ -2,11 +2,7 @@ import { CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "wasp/client/auth";
-import {
-  generateCheckoutSession,
-  getCustomerPortalUrl,
-  useQuery,
-} from "wasp/client/operations";
+import { generateCheckoutSession } from "wasp/client/operations";
 import { Alert, AlertDescription } from "../client/components/ui/alert";
 import { Button } from "../client/components/ui/button";
 import {
@@ -15,77 +11,38 @@ import {
   CardFooter,
   CardTitle,
 } from "../client/components/ui/card";
-import { cn } from "../client/utils";
-import {
-  PaymentPlanId,
-  paymentPlans,
-  prettyPaymentPlanName,
-  SubscriptionStatus,
-} from "./plans";
+import { PaymentPlanId, prettyPaymentPlanName } from "./plans";
 
-const bestDealPaymentPlanId: PaymentPlanId = PaymentPlanId.Pro;
+const credits10PriceLabel =
+  import.meta.env.REACT_APP_CREDITS_10_PRICE_LABEL ?? "¥9.90";
 
-interface PaymentPlanCard {
-  name: string;
-  price: string;
-  description: string;
-  features: string[];
-}
-
-export const paymentPlanCards: Record<PaymentPlanId, PaymentPlanCard> = {
-  [PaymentPlanId.Hobby]: {
-    name: "Starter",
-    price: "$9.99",
-    description: "For trying Circle Roundtable with a small team.",
-    features: ["Monthly Circle usage", "Google login", "Saved session history"],
-  },
-  [PaymentPlanId.Pro]: {
-    name: "Pro",
-    price: "$19.99",
-    description: "For regular decision work and deeper follow-ups.",
-    features: ["Higher monthly usage", "Priority support", "Follow-up questions"],
-  },
-  [PaymentPlanId.Credits10]: {
-    name: prettyPaymentPlanName(PaymentPlanId.Credits10),
-    price: "$9.99",
-    description: "One-time credit pack for additional Circle discussions.",
-    features: ["10 discussion credits", "No subscription required", "No expiration date"],
-  },
+const creditsPlan = {
+  description: "One-time Alipay purchase for additional Circle discussions.",
+  features: [
+    "10 discussion credits",
+    "Alipay payment",
+    "Credits are added after payment notification",
+  ],
+  name: prettyPaymentPlanName(PaymentPlanId.Credits10),
+  price: credits10PriceLabel,
 };
 
 const PricingPage = () => {
   const [isPaymentLoading, setIsPaymentLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const { data: user } = useAuth();
-  const canManageBilling =
-    !!user &&
-    !!user.subscriptionStatus &&
-    user.subscriptionStatus !== SubscriptionStatus.Deleted;
-  const hasActiveSubscription =
-    user?.subscriptionStatus === SubscriptionStatus.Active;
-  const hasPastDueSubscription =
-    user?.subscriptionStatus === SubscriptionStatus.PastDue;
-  const hasCancellingSubscription =
-    user?.subscriptionStatus === SubscriptionStatus.CancelAtPeriodEnd;
-
-  const {
-    data: customerPortalUrl,
-    isLoading: isCustomerPortalUrlLoading,
-    error: customerPortalUrlError,
-  } = useQuery(getCustomerPortalUrl, { enabled: canManageBilling });
-
   const navigate = useNavigate();
 
-  async function handleBuyNowClick(paymentPlanId: PaymentPlanId) {
+  async function handleBuyNowClick() {
     if (!user) {
       navigate("/login");
       return;
     }
     try {
       setIsPaymentLoading(true);
-
-      const checkoutResults = await generateCheckoutSession(paymentPlanId);
+      const checkoutResults = await generateCheckoutSession(
+        PaymentPlanId.Credits10,
+      );
 
       if (checkoutResults?.sessionUrl) {
         window.open(checkoutResults.sessionUrl, "_self");
@@ -94,169 +51,77 @@ const PricingPage = () => {
       }
     } catch (error: unknown) {
       console.error(error);
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("Error processing payment. Please try again later.");
-      }
-      setIsPaymentLoading(false); // We only set this to false here and not in the try block because we redirect to the checkout url within the same window
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Error processing payment. Please try again later.",
+      );
+      setIsPaymentLoading(false);
     }
   }
-
-  const handleCustomerPortalClick = () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-
-    if (customerPortalUrlError) {
-      setErrorMessage("Error fetching Customer Portal URL");
-      return;
-    }
-
-    if (!customerPortalUrl) {
-      setErrorMessage(`Customer Portal does not exist for user ${user.id}`);
-      return;
-    }
-
-    window.open(customerPortalUrl, "_blank");
-  };
 
   return (
     <div className="py-10 lg:mt-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div id="pricing" className="mx-auto max-w-4xl text-center">
           <h2 className="text-foreground mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-            Choose your <span className="text-primary">Circle plan</span>
+            Buy <span className="text-primary">Circle credits</span>
           </h2>
         </div>
         <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-center text-lg leading-8">
-          Subscribe for recurring Circle usage or buy credits when you need more
-          completed roundtable discussions.
+          Purchase credits with Alipay. Credits are granted after the payment
+          provider sends a verified notification.
         </p>
         {errorMessage && (
           <Alert variant="destructive" className="mt-8">
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
-        {hasPastDueSubscription && (
-          <Alert variant="destructive" className="mt-8">
-            <AlertDescription>
-              Your subscription payment is past due. Manage billing to restore
-              subscription access, or buy one-time credits.
-            </AlertDescription>
-          </Alert>
-        )}
-        {hasCancellingSubscription && (
-          <Alert className="mt-8">
-            <AlertDescription>
-              Your subscription is set to cancel at the end of the current
-              period. You can manage billing or buy one-time credits.
-            </AlertDescription>
-          </Alert>
-        )}
-        <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8">
-          {Object.values(PaymentPlanId).map((planId) => {
-            const isCreditsPlan =
-              paymentPlans[planId].effect.kind === "credits";
-            const shouldManageBilling =
-              !isCreditsPlan &&
-              canManageBilling &&
-              (hasActiveSubscription ||
-                hasPastDueSubscription ||
-                hasCancellingSubscription);
-            return (
-            <Card
-              key={planId}
-              className={cn(
-                "relative flex grow flex-col justify-between overflow-hidden transition-all duration-300 hover:shadow-lg",
-                {
-                  "ring-primary bg-transparent! ring-2":
-                    planId === bestDealPaymentPlanId,
-                  "ring-border ring-1 lg:my-8":
-                    planId !== bestDealPaymentPlanId,
-                },
-              )}
-            >
-              {planId === bestDealPaymentPlanId && (
-                <div
-                  className="absolute top-0 right-0 -z-10 h-full w-full transform-gpu blur-3xl"
-                  aria-hidden="true"
+        <div className="mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20">
+          <Card className="ring-primary relative flex grow flex-col justify-between overflow-hidden bg-transparent! ring-2 transition-all duration-300 hover:shadow-lg">
+            <CardContent className="h-full justify-between p-8 xl:p-10">
+              <div className="flex items-center justify-between gap-x-4">
+                <CardTitle
+                  id={PaymentPlanId.Credits10}
+                  className="text-foreground text-lg leading-8 font-semibold"
                 >
-                  <div
-                    className="from-primary/40 via-primary/20 to-primary/10 absolute h-full w-full bg-linear-to-br opacity-30"
-                    style={{
-                      clipPath: "circle(670% at 50% 50%)",
-                    }}
-                  />
-                </div>
-              )}
-              <CardContent className="h-full justify-between p-8 xl:p-10">
-                <div className="flex items-center justify-between gap-x-4">
-                  <CardTitle
-                    id={planId}
-                    className="text-foreground text-lg leading-8 font-semibold"
-                  >
-                    {paymentPlanCards[planId].name}
-                  </CardTitle>
-                </div>
-                <p className="text-muted-foreground mt-4 text-sm leading-6">
-                  {paymentPlanCards[planId].description}
-                </p>
-                <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-foreground text-4xl font-bold tracking-tight">
-                    {paymentPlanCards[planId].price}
-                  </span>
-                  <span className="text-muted-foreground text-sm leading-6 font-semibold">
-                    {paymentPlans[planId].effect.kind === "subscription" &&
-                      "/month"}
-                  </span>
-                </p>
-                <ul
-                  role="list"
-                  className="text-muted-foreground mt-8 space-y-3 text-sm leading-6"
-                >
-                  {paymentPlanCards[planId].features.map((feature) => (
-                    <li key={feature} className="flex gap-x-3">
-                      <CheckCircle
-                        className="text-primary h-5 w-5 flex-none"
-                        aria-hidden="true"
-                      />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                {shouldManageBilling ? (
-                  <Button
-                    onClick={handleCustomerPortalClick}
-                    disabled={isCustomerPortalUrlLoading}
-                    aria-describedby="manage-subscription"
-                    variant={
-                      planId === bestDealPaymentPlanId ? "default" : "outline"
-                    }
-                    className="w-full"
-                  >
-                    Manage Subscription
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleBuyNowClick(planId)}
-                    aria-describedby={planId}
-                    variant={
-                      planId === bestDealPaymentPlanId ? "default" : "outline"
-                    }
-                    className="w-full"
-                    disabled={isPaymentLoading}
-                  >
-                    {!!user ? "Choose plan" : "Log in to choose"}
-                  </Button>
-                )}
-              </CardFooter>
-            </Card>
-            );
-          })}
+                  {creditsPlan.name}
+                </CardTitle>
+              </div>
+              <p className="text-muted-foreground mt-4 text-sm leading-6">
+                {creditsPlan.description}
+              </p>
+              <p className="mt-6 flex items-baseline gap-x-1">
+                <span className="text-foreground text-4xl font-bold tracking-tight">
+                  {creditsPlan.price}
+                </span>
+              </p>
+              <ul
+                role="list"
+                className="text-muted-foreground mt-8 space-y-3 text-sm leading-6"
+              >
+                {creditsPlan.features.map((feature) => (
+                  <li key={feature} className="flex gap-x-3">
+                    <CheckCircle
+                      className="text-primary h-5 w-5 flex-none"
+                      aria-hidden="true"
+                    />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button
+                onClick={handleBuyNowClick}
+                aria-describedby={PaymentPlanId.Credits10}
+                className="w-full"
+                disabled={isPaymentLoading}
+              >
+                {!!user ? "Pay with Alipay" : "Log in to buy credits"}
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       </div>
     </div>
