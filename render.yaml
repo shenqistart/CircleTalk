@@ -101,7 +101,6 @@ services:
     branch: codex/migrate-open-saas-google-stripe
     dockerfilePath: ./apps/backend/Dockerfile
     dockerContext: .
-    healthCheckPath: /health
     envVars:
       - key: APP_ENV
         value: production
