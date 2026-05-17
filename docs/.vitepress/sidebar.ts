@@ -8,6 +8,10 @@ export const sidebar = [
     link: '/dev',
   },
   {
+    text: '架构图、数据流与日志排查',
+    link: '/architecture-flows-observability',
+  },
+  {
     text: 'Claude Code 指南',
     collapsed: false,
     items: [

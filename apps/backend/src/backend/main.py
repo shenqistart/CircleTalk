@@ -1,6 +1,7 @@
 """FastAPI 应用入口。"""
 
 import logging
+import os
 import time
 import uuid
 from collections.abc import AsyncGenerator, Awaitable, Callable
@@ -22,6 +23,24 @@ from backend.container import AppContainer
 from backend.domain.api import roundtable_router, roundtable_worker_router, user_router
 
 logger = logging.getLogger(__name__)
+
+
+def _is_production_env() -> bool:
+    values = [os.getenv("APP_ENV"), os.getenv("ENVIRONMENT"), os.getenv("ENV"), os.getenv("PYTHON_ENV")]
+    return any((value or "").strip().lower() == "production" for value in values)
+
+
+def _parse_allowed_origins() -> list[str]:
+    raw = os.getenv("ALLOWED_ORIGINS", "")
+    origins = [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
+    if _is_production_env():
+        if not origins:
+            msg = "ALLOWED_ORIGINS must be set explicitly in production."
+            raise RuntimeError(msg)
+        if "*" in origins:
+            msg = 'ALLOWED_ORIGINS cannot contain "*" in production.'
+            raise RuntimeError(msg)
+    return origins or ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"]
 
 
 async def initialize_db_engines(config: dict) -> None:
@@ -88,7 +107,7 @@ app = FastAPI(
 # 跨域配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_parse_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

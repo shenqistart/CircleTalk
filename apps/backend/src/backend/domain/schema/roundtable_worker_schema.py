@@ -10,15 +10,6 @@ from backend.domain.schema.roundtable_schema import RoundtableLanguage, to_camel
 WORKER_CONTRACT_VERSION = "roundtable.worker.v1"
 
 type WorkerContractVersion = Literal["roundtable.worker.v1"]
-type WorkerStreamEventType = Literal[
-    "roundtable.worker.v1.started",
-    "roundtable.worker.v1.message.delta",
-    "roundtable.worker.v1.message.completed",
-    "roundtable.worker.v1.artifact.updated",
-    "roundtable.worker.v1.completed",
-    "roundtable.worker.v1.error",
-]
-
 
 class WorkerCamelModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
@@ -112,19 +103,18 @@ class WorkerStatusResponseV1(WorkerCamelModel):
     deepagents_enabled: bool
 
 
-class WorkerStreamEvent(WorkerCamelModel):
+class WorkerStreamEventBase(WorkerCamelModel):
     contract_version: WorkerContractVersion = WORKER_CONTRACT_VERSION
     request_id: str
-    event_type: WorkerStreamEventType
     session_id: str
 
 
-class WorkerStartedEvent(WorkerStreamEvent):
+class WorkerStartedEvent(WorkerStreamEventBase):
     event_type: Literal["roundtable.worker.v1.started"] = "roundtable.worker.v1.started"
     started_at: datetime
 
 
-class WorkerMessageDeltaEvent(WorkerStreamEvent):
+class WorkerMessageDeltaEvent(WorkerStreamEventBase):
     event_type: Literal["roundtable.worker.v1.message.delta"] = "roundtable.worker.v1.message.delta"
     message_id: str
     persona_id: str | None = None
@@ -132,7 +122,7 @@ class WorkerMessageDeltaEvent(WorkerStreamEvent):
     text_delta: str
 
 
-class WorkerMessageCompletedEvent(WorkerStreamEvent):
+class WorkerMessageCompletedEvent(WorkerStreamEventBase):
     event_type: Literal["roundtable.worker.v1.message.completed"] = "roundtable.worker.v1.message.completed"
     message_id: str
     persona_id: str | None = None
@@ -142,19 +132,19 @@ class WorkerMessageCompletedEvent(WorkerStreamEvent):
     content: str
 
 
-class WorkerArtifactUpdatedEvent(WorkerStreamEvent):
+class WorkerArtifactUpdatedEvent(WorkerStreamEventBase):
     event_type: Literal["roundtable.worker.v1.artifact.updated"] = "roundtable.worker.v1.artifact.updated"
     artifact_type: Literal["decision_artifact"] = "decision_artifact"
     payload: WorkerArtifact
     is_final: bool = True
 
 
-class WorkerCompletedEvent(WorkerStreamEvent):
+class WorkerCompletedEvent(WorkerStreamEventBase):
     event_type: Literal["roundtable.worker.v1.completed"] = "roundtable.worker.v1.completed"
     usage: dict[str, Any] = Field(default_factory=dict)
     completed_at: datetime
 
 
-class WorkerErrorEvent(WorkerStreamEvent):
+class WorkerErrorEvent(WorkerStreamEventBase):
     event_type: Literal["roundtable.worker.v1.error"] = "roundtable.worker.v1.error"
     error: WorkerErrorV1

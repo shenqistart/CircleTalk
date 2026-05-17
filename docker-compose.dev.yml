@@ -16,17 +16,20 @@ services:
       timeout: 5s
       retries: 20
 
-  backend:
+  worker:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
-    container_name: bedrock-backend
+    container_name: circletalk-worker
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bedrock
       CONFIG_PATH: /app/apps/backend/config.yaml
+      APP_ENV: ${APP_ENV:-development}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      AI_WORKER_SHARED_SECRET: ${AI_WORKER_SHARED_SECRET:-dev-only-change-me}
       ROUNDTABLE_LLM_ENABLED: ${ROUNDTABLE_LLM_ENABLED:-false}
       ROUNDTABLE_LLM_MODEL: ${ROUNDTABLE_LLM_MODEL:-}
       ROUNDTABLE_LLM_API_KEY: ${ROUNDTABLE_LLM_API_KEY:-}

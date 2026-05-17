@@ -7,8 +7,8 @@ hero:
   tagline: 所有子服务的规范源头、学习入口和设计语言参考
   actions:
     - theme: brand
-      text: Claude Code 规范
-      link: /superpowers/specs/2026-04-01-bedrock-design
+      text: 架构与排查
+      link: /architecture-flows-observability
     - theme: alt
       text: 后端架构
       link: /backend/architecture
@@ -22,10 +22,10 @@ features:
     linkText: 查看配置架构
   - icon:
       src: /icons/layers.svg
-    title: 后端三层架构
-    details: FastAPI + SQLAlchemy + dependency-injector，严格遵循 API → Service → Repository 分层规范
-    link: /backend/architecture
-    linkText: 查看架构文档
+    title: 架构图与数据流
+    details: CircleTalk 主入口、FastAPI AI Worker、共享包、SSE 合同与日志排查流程
+    link: /architecture-flows-observability
+    linkText: 查看排查文档
   - icon:
       src: /icons/palette.svg
     title: 前端设计系统

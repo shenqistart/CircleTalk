@@ -16,6 +16,7 @@ import { ensureArgsSchemaOrThrowHttpError } from "../../server/validation";
 import { defaultRoundtablePersonas } from "./personaCatalog";
 import {
   createStreamTokenNonce,
+  ROUNDTABLE_STREAM_TOKEN_TTL_MS,
   signRoundtableStreamToken,
   type RoundtableStreamPurpose,
 } from "./streamToken";
@@ -162,7 +163,7 @@ export const getRoundtableSession: GetRoundtableSession<
 
 export const startRoundtableDiscussion: StartRoundtableDiscussion<
   z.infer<typeof usageInputSchema>,
-  { usage: RoundtableUsageView; streamPath: string; streamToken: string | null }
+  { usage: RoundtableUsageView; streamPath: string; streamToken: string }
 > = async (rawArgs, context) => {
   const userId = requireUserId(context);
   const { sessionId, idempotencyKey } = ensureArgsSchemaOrThrowHttpError(
@@ -177,19 +178,22 @@ export const startRoundtableDiscussion: StartRoundtableDiscussion<
     idempotencyKey,
     requestedCredits: 1,
   });
-  const streamToken = issueStreamToken(userId, sessionId, usage, "discussion");
+  const streamToken = issueStreamTokenOrThrow(
+    userId,
+    sessionId,
+    usage,
+    "discussion",
+  );
   return {
     usage: toUsageView(usage),
-    streamPath: streamToken
-      ? `/roundtable/stream?token=${encodeURIComponent(streamToken)}`
-      : `/roundtable/stream?usageId=${usage.id}`,
+    streamPath: `/roundtable/stream?token=${encodeURIComponent(streamToken)}`,
     streamToken,
   };
 };
 
 export const submitRoundtableFollowUp: SubmitRoundtableFollowUp<
   z.infer<typeof followUpInputSchema>,
-  { usage: RoundtableUsageView; streamPath: string; streamToken: string | null }
+  { usage: RoundtableUsageView; streamPath: string; streamToken: string }
 > = async (rawArgs, context) => {
   const userId = requireUserId(context);
   const { sessionId, idempotencyKey, question, language } =
@@ -203,12 +207,15 @@ export const submitRoundtableFollowUp: SubmitRoundtableFollowUp<
     requestedCredits: 0,
     metadataJson: { question, language },
   });
-  const streamToken = issueStreamToken(userId, sessionId, usage, "follow_up");
+  const streamToken = issueStreamTokenOrThrow(
+    userId,
+    sessionId,
+    usage,
+    "follow_up",
+  );
   return {
     usage: toUsageView(usage),
-    streamPath: streamToken
-      ? `/roundtable/stream?token=${encodeURIComponent(streamToken)}`
-      : `/roundtable/stream?usageId=${usage.id}`,
+    streamPath: `/roundtable/stream?token=${encodeURIComponent(streamToken)}`,
     streamToken,
   };
 };
@@ -220,7 +227,13 @@ function requireUserId(context: { user?: { id: string } | null }): string {
   return context.user.id;
 }
 
+let lastPersonaSyncAt = 0;
+const PERSONA_SYNC_TTL_MS = 5 * 60 * 1000;
+
 async function syncDefaultPersonas() {
+  if (Date.now() - lastPersonaSyncAt < PERSONA_SYNC_TTL_MS) {
+    return;
+  }
   await prisma.$transaction(
     defaultRoundtablePersonas.map((persona) =>
       prisma.roundtablePersona.upsert({
@@ -245,6 +258,7 @@ async function syncDefaultPersonas() {
       }),
     ),
   );
+  lastPersonaSyncAt = Date.now();
 }
 
 function recommendPersonas(
@@ -430,7 +444,7 @@ async function reservePendingUsage({
   });
 }
 
-function issueStreamToken(
+function issueStreamTokenOrThrow(
   userId: string,
   sessionId: string,
   usage: {
@@ -441,7 +455,10 @@ function issueStreamToken(
   purpose: RoundtableStreamPurpose,
 ) {
   if (usage.status !== "reserved" || !usage.streamTokenNonce) {
-    return null;
+    throw new HttpError(
+      409,
+      "Roundtable session has active work but no resumable stream token. Please start a new request.",
+    );
   }
   return signRoundtableStreamToken({
     userId,
@@ -449,7 +466,7 @@ function issueStreamToken(
     usageId: usage.id,
     purpose,
     nonce: usage.streamTokenNonce,
-    expiresAt: Date.now() + 5 * 60 * 1000,
+    expiresAt: Date.now() + ROUNDTABLE_STREAM_TOKEN_TTL_MS,
   });
 }
 

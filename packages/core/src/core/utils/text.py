@@ -3,9 +3,9 @@
 import re
 import warnings
 
-warnings.filterwarnings("ignore", category=UserWarning, message=".*pkg_resources is deprecated.*")
-
-import jieba
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=UserWarning, message=".*pkg_resources is deprecated.*")
+    import jieba
 
 _FTS_STOPWORDS = {
     "的",

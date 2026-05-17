@@ -58,16 +58,22 @@ const PricingPage = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: user } = useAuth();
-  const isUserSubscribed =
+  const canManageBilling =
     !!user &&
     !!user.subscriptionStatus &&
     user.subscriptionStatus !== SubscriptionStatus.Deleted;
+  const hasActiveSubscription =
+    user?.subscriptionStatus === SubscriptionStatus.Active;
+  const hasPastDueSubscription =
+    user?.subscriptionStatus === SubscriptionStatus.PastDue;
+  const hasCancellingSubscription =
+    user?.subscriptionStatus === SubscriptionStatus.CancelAtPeriodEnd;
 
   const {
     data: customerPortalUrl,
     isLoading: isCustomerPortalUrlLoading,
     error: customerPortalUrlError,
-  } = useQuery(getCustomerPortalUrl, { enabled: isUserSubscribed });
+  } = useQuery(getCustomerPortalUrl, { enabled: canManageBilling });
 
   const navigate = useNavigate();
 
@@ -133,8 +139,33 @@ const PricingPage = () => {
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
+        {hasPastDueSubscription && (
+          <Alert variant="destructive" className="mt-8">
+            <AlertDescription>
+              Your subscription payment is past due. Manage billing to restore
+              subscription access, or buy one-time credits.
+            </AlertDescription>
+          </Alert>
+        )}
+        {hasCancellingSubscription && (
+          <Alert className="mt-8">
+            <AlertDescription>
+              Your subscription is set to cancel at the end of the current
+              period. You can manage billing or buy one-time credits.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8">
-          {Object.values(PaymentPlanId).map((planId) => (
+          {Object.values(PaymentPlanId).map((planId) => {
+            const isCreditsPlan =
+              paymentPlans[planId].effect.kind === "credits";
+            const shouldManageBilling =
+              !isCreditsPlan &&
+              canManageBilling &&
+              (hasActiveSubscription ||
+                hasPastDueSubscription ||
+                hasCancellingSubscription);
+            return (
             <Card
               key={planId}
               className={cn(
@@ -197,7 +228,7 @@ const PricingPage = () => {
                 </ul>
               </CardContent>
               <CardFooter>
-                {isUserSubscribed ? (
+                {shouldManageBilling ? (
                   <Button
                     onClick={handleCustomerPortalClick}
                     disabled={isCustomerPortalUrlLoading}
@@ -224,7 +255,8 @@ const PricingPage = () => {
                 )}
               </CardFooter>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

@@ -62,11 +62,28 @@ async def test_internal_worker_requires_shared_secret(client: AsyncClient) -> No
 
 
 @pytest.mark.asyncio
+async def test_internal_worker_rejects_wrong_shared_secret(client: AsyncClient) -> None:
+    response = await client.get("/internal/roundtable/status", headers={"X-AI-Worker-Secret": "wrong"})
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_internal_worker_status_accepts_bearer_secret(client: AsyncClient) -> None:
     response = await client.get("/internal/roundtable/status", headers={"Authorization": "Bearer test-secret"})
 
     assert response.status_code == 200
     assert response.json()["contractVersion"] == "roundtable.worker.v1"
+
+
+@pytest.mark.asyncio
+async def test_internal_worker_requires_all_supplied_secret_headers_to_match(client: AsyncClient) -> None:
+    response = await client.get(
+        "/internal/roundtable/status",
+        headers={"Authorization": "Bearer test-secret", "X-AI-Worker-Secret": "wrong"},
+    )
+
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio

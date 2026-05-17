@@ -1,7 +1,8 @@
 {
-  "name": "@bedrock/frontend",
+  "name": "@bedrock/legacy-frontend",
   "version": "1.0.0",
   "private": true,
+  "description": "Legacy Vite React demo; not the CircleTalk production entrypoint.",
   "type": "module",
   "scripts": {
     "dev": "vite",

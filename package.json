@@ -2,17 +2,20 @@
   "name": "bedrock",
   "version": "1.0.0",
   "private": true,
-  "description": "Company-level reference implementation project",
+  "description": "CircleTalk SaaS monorepo",
   "scripts": {
-    "dev": "pnpm --parallel --filter './apps/*' dev",
-    "dev:backend": "cd apps/backend && python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000",
-    "dev:frontend": "pnpm --filter @bedrock/frontend dev",
-    "lint": "pnpm --parallel --filter './apps/*' lint",
-    "lint:backend": "cd apps/backend && ruff format src/ && ruff check --fix src/ && pyright src/",
-    "lint:frontend": "pnpm --filter @bedrock/frontend lint",
-    "test": "cd apps/backend && pytest",
+    "dev": "pnpm dev:saas",
+    "dev:saas": "cd apps/open-saas/app && wasp start",
+    "dev:worker": "zsh -lc 'set -a; source apps/open-saas/app/.env.server; set +a; export APP_ENV=${APP_ENV:-development}; export ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}; cd apps/backend && uv run uvicorn backend.main:app --reload --host 0.0.0.0 --port ${AI_WORKER_PORT:-8001}'",
+    "dev:legacy-frontend": "pnpm --filter @bedrock/legacy-frontend dev",
+    "lint": "pnpm lint:worker",
+    "lint:worker": "uv run ruff check apps/backend/src packages/core/src packages/llm/src packages/knowledge/src apps/backend/tests && uv run pyright apps/backend/src",
+    "typecheck:worker": "uv run pyright apps/backend/src",
+    "test": "pnpm test:worker",
+    "test:worker": "uv run pytest apps/backend/tests -q",
     "dev:docs": "pnpm --filter docs dev",
-    "build": "pnpm --filter @bedrock/frontend build"
+    "build": "cd apps/open-saas/app && wasp build",
+    "build:legacy-frontend": "pnpm --filter @bedrock/legacy-frontend build"
   },
   "engines": {
     "node": ">=20.0.0"

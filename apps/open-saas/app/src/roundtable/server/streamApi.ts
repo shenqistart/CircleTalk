@@ -71,21 +71,7 @@ export const roundtableStream: RoundtableStream = async (
   } catch (error) {
     if (!abortController.signal.aborted) {
       await markUsageError(usage.id, session.id, getErrorMessage(error));
-      response.write(
-        `event: roundtable.worker.v1.error\ndata: ${JSON.stringify({
-          contractVersion: "roundtable.worker.v1",
-          requestId: usage.workerRequestId ?? usage.id,
-          sessionId: session.id,
-          eventType: "roundtable.worker.v1.error",
-          error: {
-            contractVersion: "roundtable.worker.v1",
-            requestId: usage.workerRequestId ?? usage.id,
-            code: "wasp_stream_proxy_error",
-            message: getErrorMessage(error),
-            retryable: true,
-          },
-        })}\n\n`,
-      );
+      writeWorkerErrorEvent(response, usage, session.id, getErrorMessage(error));
     }
     completed = true;
     response.end();
@@ -211,14 +197,17 @@ async function completeUsage(usageId: string) {
     const usage = await tx.roundtableUsage.findUniqueOrThrow({
       where: { id: usageId },
     });
-    await tx.roundtableUsage.update({
-      where: { id: usageId },
+    const updated = await tx.roundtableUsage.updateMany({
+      where: { id: usageId, status: { in: ["pending", "reserved"] } },
       data: {
         status: "completed",
         completedAt: new Date(),
         errorMessage: null,
       },
     });
+    if (updated.count !== 1) {
+      return;
+    }
     await tx.roundtableSession.update({
       where: { id: usage.sessionId },
       data: { status: "completed" },
@@ -393,4 +382,28 @@ function normalizeLanguage(value: string): RoundtableLanguage {
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Roundtable stream failed.";
+}
+
+function writeWorkerErrorEvent(
+  response: Parameters<RoundtableStream>[1],
+  usage: ReservedUsage,
+  sessionId: string,
+  message: string,
+) {
+  const requestId = usage.workerRequestId ?? usage.id;
+  response.write(
+    `event: roundtable.worker.v1.error\ndata: ${JSON.stringify({
+      contractVersion: "roundtable.worker.v1",
+      requestId,
+      sessionId,
+      eventType: "roundtable.worker.v1.error",
+      error: {
+        contractVersion: "roundtable.worker.v1",
+        requestId,
+        code: "wasp_stream_proxy_error",
+        message,
+        retryable: true,
+      },
+    })}\n\n`,
+  );
 }

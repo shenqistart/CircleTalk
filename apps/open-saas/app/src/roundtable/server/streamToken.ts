@@ -14,6 +14,7 @@ export type RoundtableStreamTokenClaims = {
 };
 
 const TOKEN_SECRET_ENV = "ROUNDTABLE_STREAM_TOKEN_SECRET";
+export const ROUNDTABLE_STREAM_TOKEN_TTL_MS = 5 * 60 * 1000;
 
 export function createStreamTokenNonce() {
   return randomUUID();

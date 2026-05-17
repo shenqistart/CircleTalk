@@ -28,6 +28,7 @@ model User {
   files                     File[]
   roundtableSessions        RoundtableSession[]
   roundtableUsages          RoundtableUsage[]
+  paymentWebhookEvents      PaymentWebhookEvent[]
 }
 
 model GptResponse {
@@ -236,4 +237,21 @@ model RoundtableUsage {
   @@index([sessionId, status])
   @@index([userId, createdAt])
   @@index([workerRequestId])
+}
+
+model PaymentWebhookEvent {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  processedAt               DateTime        @default(now())
+
+  user                      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId                    String?
+
+  provider                  String
+  eventId                   String          @unique
+  eventType                 String
+  metadataJson              Json?
+
+  @@index([provider, eventType])
+  @@index([processedAt])
 }

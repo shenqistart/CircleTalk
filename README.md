@@ -1,113 +1,110 @@
-# circle-talk
+# CircleTalk
 
+CircleTalk is a production-oriented SaaS for private AI roundtable discussions. The production web entrypoint is the Wasp/Open SaaS app in `apps/open-saas/app`; the FastAPI app in `apps/backend` is a private AI Worker used only by the Wasp server.
 
-## 项目结构
+## Production Architecture
 
-```
+- `apps/open-saas/app` is the only production user-facing application.
+- Wasp owns Google Auth, users, Stripe billing, credits, roundtable sessions, messages, artifacts, usage records, and admin operations.
+- `apps/backend` is a private FastAPI AI Worker. It accepts already-authorized server-to-server requests from Wasp and streams Roundtable worker SSE events.
+- The Worker does not own browser auth, payment state, credit settlement, or session persistence.
+- Worker internal endpoints under `/internal/roundtable/*` require `AI_WORKER_SHARED_SECRET`.
+- `apps/frontend` is a legacy Vite React demo and is not part of default production build or deploy.
+
+```text
 bedrock/
 ├── apps/
-│   ├── backend/                # FastAPI Python 后端 (8000)
-│   │   └── src/backend/
-│   │       ├── main.py         # 启动 + 路由注册
-│   │       ├── container.py    # DI 容器
-│   │       ├── common/         # 通用工具（error_handler / pagination / response）
-│   │       └── domain/         # 业务域
-│   │           ├── api/        # API 端点
-│   │           ├── model/      # ORM 模型
-│   │           ├── repository/ # 数据访问
-│   │           ├── schema/     # Pydantic Schema
-│   │           └── service/    # 业务逻辑
-│   └── frontend/               # React TypeScript 前端 (5173)
-│       └── src/
-│           ├── app/            # layouts / providers / routes
-│           ├── features/       # 按业务划分（user/ 为示例）
-│           ├── shared/         # hooks / lib / types
-│           └── styles/         # 设计 token
+│   ├── open-saas/app/          # Production CircleTalk Wasp/Open SaaS app
+│   ├── backend/                # Private FastAPI AI Worker
+│   └── frontend/               # Legacy Vite demo, not production
 ├── packages/
-│   ├── core/                   # 共享基础设施（13 模块）
-│   ├── llm/                    # LLM 能力封装
-│   └── knowledge/              # 知识库
-├── docs/                       # 技术文档（VitePress）
-└── .claude/                    # Claude Code 规范体系
+│   ├── core/                   # Python shared infrastructure
+│   ├── llm/                    # Roundtable LLM orchestration
+│   └── knowledge/              # Knowledge package
+├── docs/                       # Technical docs and launch checklist
+└── .agents/                    # Codex skills and project gates
 ```
 
-## 技术栈
+## Local Development
 
-| 层 | 技术 |
-|----|------|
-| 后端 | Python 3.13+, FastAPI, SQLAlchemy 2.0 (async), dependency-injector, Alembic |
-| 前端 | React 19, TypeScript 5.9, Vite, Tailwind CSS 4.x, shadcn/ui, TanStack Query, AI SDK UI |
-| 数据库 | PostgreSQL (多租户 Schema 隔离), Redis, pgvector |
-| 存储 | MinIO (S3 兼容) |
-| AI | AI SDK Text Stream, DeepAgents, LangChain, LangGraph, 多供应商 LLM (OpenAI / DashScope / Ollama) |
-| 工具链 | pnpm (前端), uv (Python), Ruff, Pyright, ESLint |
-
-## 快速启动
+Start Postgres:
 
 ```bash
-# 后端
-cd apps/backend && python -m uvicorn backend.main:app --reload --port 8000
-
-# 前端
-pnpm --filter @bedrock/frontend dev
-
-# 全栈
-pnpm dev
+docker compose -f docker-compose.dev.yml up -d postgres
 ```
 
-
-## 圆桌对话决策参谋
-
-首版目标是实现“决策题 → 人物选择/推荐 → Opening/Rebuttal/Closing 多轮圆桌 → 主持人三件套 → follow-up”的闭环。专业栈边界：前端使用 AI SDK Text Stream，后端使用 FastAPI + `packages/llm` DeepAgents adapter，数据库使用 Render Postgres 持久化 session/transcript/artifacts。
-
-当前实现说明与验收清单见 [圆桌对话决策参谋文档](docs/features-roundtable.md)。
-
-## 后端架构
-
-三层分层：**API → Service → Repository**
-
-- **API**: `@inject` + `Depends(Provide["..."])` 注入 Service；`Depends(db_session)` 获取 Session
-- **Service**: 构造器注入依赖；首参 `session: AsyncSession`；写操作调用 `flush()`
-- **Repository**: Singleton 无状态；显式接收 `session`；不创建 Session、不 commit
-
-## 前端架构
-
-- `features/` 按业务组织（components / hooks / api / types）
-- `shared/` 全局共享（hooks / lib / types）
-- `styles/` 设计系统（CSS 变量 / 设计 token）
-
-## 技术文档
-
-项目使用 [VitePress](https://vitepress.dev/) 构建技术文档站点，覆盖后端架构、前端开发、共享包、Claude Code 规范等内容。
-
-### 启动文档站点
+Start the Wasp/Open SaaS app:
 
 ```bash
-pnpm --filter docs dev
+cd apps/open-saas/app
+wasp start db
+wasp db migrate-dev
+wasp start
 ```
 
-访问 `http://localhost:5173` 查看文档。
+Start the private AI Worker:
 
-### 文档预览
+```bash
+pnpm dev:worker
+```
 
-**首页** — 项目总览与快速导航：
+The Wasp server needs `AI_WORKER_URL=http://localhost:8000` and the same `AI_WORKER_SHARED_SECRET` value that is configured on the Worker. The Worker should set `ALLOWED_ORIGINS` to the Wasp app origin in production; for local development use `http://localhost:3000,http://localhost:3001`.
 
-![VitePress 首页](docs/public/screenshots/vitepress-home.png)
+## Required Configuration
 
-**文档页** — 左侧导航 + 右侧目录 + 全文搜索：
+Google OAuth:
 
-![VitePress 文档页](docs/public/screenshots/vitepress-docs.png)
+- Create a Google OAuth client.
+- Configure the Wasp callback URL for your deployment.
+- Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the Wasp server environment.
 
-### 文档目录
+Stripe:
 
-| 分类 | 文档 | 说明 |
-|------|------|------|
-| 后端 | [后端架构与开发规范](docs/backend/architecture.md) | 三层分层、DI、Session 策略 |
-| 后端 | [依赖注入架构指南](docs/backend/dependency-injection.md) | AppContainer 设计与陷阱 |
-| 前端 | [前端开发指南](docs/frontend/development.md) | 技术栈、组件规范、API 模式 |
-| 共享包 | [Core 基础设施](docs/packages/core.md) | 13 个基础模块总览 |
-| 共享包 | [LLM 能力封装](docs/packages/llm.md) | 多供应商路由、向量检索 |
-| 共享包 | [Knowledge 知识库](docs/packages/knowledge.md) | 领域模型、异常体系 |
-| Claude Code | [项目配置架构解析](docs/claude/architecture.md) | Rules / Skills / Hooks / Settings |
-| Claude Code | [速查手册](docs/claude/cheatsheet.md) | 日常开发快速查阅 |
-| Claude Code | [进阶定制指南](docs/claude/customization.md) | 新增 Rule / Skill / Hook 方法 |
+- Create subscription prices for Hobby and Pro.
+- Create a one-time payment price for `Credits10`.
+- Set `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `PAYMENTS_HOBBY_SUBSCRIPTION_PLAN_ID`, `PAYMENTS_PRO_SUBSCRIPTION_PLAN_ID`, and `PAYMENTS_CREDITS_10_PLAN_ID`.
+- Configure the webhook endpoint at `/payments-webhook`.
+
+Secrets:
+
+- Set `JWT_SECRET` for Wasp production.
+- Set `ROUNDTABLE_STREAM_TOKEN_SECRET` for signed one-time stream tokens.
+- Set `AI_WORKER_SHARED_SECRET` on both Wasp and the private Worker.
+- Never commit real secrets. Use `.env.example`, `apps/open-saas/app/.env.server.example`, and `apps/open-saas/app/.env.client.example` as placeholders only.
+
+LLM Worker:
+
+- Set `APP_ENV=production` in production.
+- Set `ALLOWED_ORIGINS` to the Wasp app origin only.
+- Configure `ROUNDTABLE_LLM_ENABLED`, `ROUNDTABLE_LLM_MODEL`, and either `OPENAI_API_KEY` or `ROUNDTABLE_LLM_API_KEY` depending on the provider.
+
+## Scripts
+
+```bash
+pnpm dev:saas        # Wasp/Open SaaS app
+pnpm dev:worker      # FastAPI private Worker
+pnpm lint:worker     # Ruff + Pyright for Python Worker/shared packages
+pnpm test:worker     # Worker/backend tests
+pnpm build           # Production Wasp/Open SaaS build, not legacy frontend
+```
+
+The old `apps/frontend` can still be run manually for archaeology, but it is not the production app and is excluded from root-level default build/deploy scripts.
+
+## Deployment
+
+Production requires two services:
+
+- Wasp/Open SaaS web app from `apps/open-saas/app`.
+- Private FastAPI AI Worker from `apps/backend`.
+
+See [deployment docs](docs/deployment.md) and [launch checklist](docs/launch-checklist.md) before going live.
+
+## Quality Gates
+
+```bash
+uv run pytest apps/backend/tests -q
+uv run ruff check apps/backend/src packages/core/src packages/llm/src packages/knowledge/src apps/backend/tests
+uv run pyright apps/backend/src
+```
+
+For Wasp, run install, Prisma migration/generate, typecheck/build, and smoke tests in an environment with Node, pnpm, and Wasp installed.

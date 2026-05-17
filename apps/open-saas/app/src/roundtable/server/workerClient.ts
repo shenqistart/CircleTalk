@@ -133,11 +133,12 @@ export async function openRoundtableWorkerStream(
   payload: unknown,
   signal: AbortSignal,
 ) {
+  const workerSecret = requireNonEmptyNodeEnvVar("AI_WORKER_SHARED_SECRET");
   const response = await fetch(`${workerBaseUrl()}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-AI-Worker-Secret": requireNodeEnvVar("AI_WORKER_SHARED_SECRET"),
+      "X-AI-Worker-Secret": workerSecret,
     },
     body: JSON.stringify(payload),
     signal,
@@ -191,5 +192,13 @@ function toWorkerArtifact(artifact: RoundtableArtifactView) {
 }
 
 function workerBaseUrl() {
-  return requireNodeEnvVar("AI_WORKER_URL").replace(/\/$/, "");
+  return requireNonEmptyNodeEnvVar("AI_WORKER_URL").replace(/\/$/, "");
+}
+
+function requireNonEmptyNodeEnvVar(name: string) {
+  const value = requireNodeEnvVar(name).trim();
+  if (!value) {
+    throw new Error(`Env var ${name} is empty`);
+  }
+  return value;
 }

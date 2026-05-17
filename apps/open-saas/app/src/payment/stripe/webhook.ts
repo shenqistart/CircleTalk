@@ -1,6 +1,7 @@
 import { type PrismaClient } from "@prisma/client";
 import express from "express";
 import type { Stripe } from "stripe";
+import { prisma } from "wasp/server";
 import { type MiddlewareConfigFn } from "wasp/server";
 import { type PaymentsWebhook } from "wasp/server/api";
 import { requireNodeEnvVar } from "../../server/utils";
@@ -32,31 +33,51 @@ export const stripeMiddlewareConfigFn: MiddlewareConfigFn = (
 export const stripeWebhook: PaymentsWebhook = async (
   request,
   response,
-  context,
+  _context,
 ) => {
-  const prismaUserDelegate = context.entities.User;
   try {
     const event = constructStripeEvent(request);
-
-    // If you'd like to handle more events, you can add more cases below.
-    // When deploying your app, you configure your webhook in the Stripe dashboard
-    // to only send the events that you're handling above.
-      // Configure the production webhook to send only the events handled here.
-    switch (event.type) {
-      case "invoice.paid":
-        await handleInvoicePaid(event, prismaUserDelegate);
-        break;
-      case "customer.subscription.updated":
-        await handleCustomerSubscriptionUpdated(event, prismaUserDelegate);
-        break;
-      case "customer.subscription.deleted":
-        await handleCustomerSubscriptionDeleted(event, prismaUserDelegate);
-        break;
-      default:
-        throw new UnhandledWebhookEventError(event.type);
+    const alreadyProcessed = await prisma.paymentWebhookEvent.findUnique({
+      where: { eventId: event.id },
+      select: { id: true },
+    });
+    if (alreadyProcessed) {
+      return response.status(204).send();
     }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.paymentWebhookEvent.create({
+        data: {
+          provider: "stripe",
+          eventId: event.id,
+          eventType: event.type,
+          metadataJson: {
+            livemode: event.livemode,
+            pendingWebhooks: event.pending_webhooks,
+          },
+        },
+      });
+
+      const prismaUserDelegate = tx.user as PrismaClient["user"];
+      switch (event.type) {
+        case "invoice.paid":
+          await handleInvoicePaid(event, prismaUserDelegate);
+          break;
+        case "customer.subscription.updated":
+          await handleCustomerSubscriptionUpdated(event, prismaUserDelegate);
+          break;
+        case "customer.subscription.deleted":
+          await handleCustomerSubscriptionDeleted(event, prismaUserDelegate);
+          break;
+        default:
+          throw new UnhandledWebhookEventError(event.type);
+      }
+    });
     return response.status(204).send();
   } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return response.status(204).send();
+    }
     if (error instanceof UnhandledWebhookEventError) {
       // In development, it is likely that we will receive events that we are not handling.
       // E.g. via the `stripe trigger` command.
@@ -80,6 +101,15 @@ export const stripeWebhook: PaymentsWebhook = async (
     }
   }
 };
+
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
+  );
+}
 
 function constructStripeEvent(request: express.Request): Stripe.Event {
   const stripeWebhookSecret = requireNodeEnvVar("STRIPE_WEBHOOK_SECRET");

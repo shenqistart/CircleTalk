@@ -3,10 +3,7 @@ import { HttpError } from "wasp/server";
 import { SubscriptionStatus } from "./plans";
 
 export function isUserSubscribed(user: Pick<User, "subscriptionStatus">) {
-  return (
-    user.subscriptionStatus === SubscriptionStatus.Active ||
-    user.subscriptionStatus === SubscriptionStatus.CancelAtPeriodEnd
-  );
+  return user.subscriptionStatus === SubscriptionStatus.Active;
 }
 
 export function getRoundtableCreditDebitAmount(

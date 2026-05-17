@@ -84,7 +84,7 @@ export const footerNavigation = {
     { name: "Pricing", href: "/pricing" },
   ],
   company: [
-    { name: "Privacy", href: "#" },
-    { name: "Terms of Service", href: "#" },
+    { name: "Privacy", href: "/privacy" },
+    { name: "Terms of Service", href: "/terms" },
   ],
 };

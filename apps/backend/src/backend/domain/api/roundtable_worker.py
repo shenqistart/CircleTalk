@@ -29,11 +29,14 @@ DEEPAGENTS_ENABLED_ENV = "ENABLE_DEEPAGENTS_ROUNDTABLE"
 
 async def require_worker_secret(request: Request) -> None:
     expected = os.getenv(WORKER_SECRET_ENV, "")
-    provided = request.headers.get(WORKER_SECRET_HEADER, "")
+    provided_values: list[str] = []
+    header_secret = request.headers.get(WORKER_SECRET_HEADER, "")
+    if header_secret:
+        provided_values.append(header_secret)
     authorization = request.headers.get("Authorization", "")
     if authorization.startswith("Bearer "):
-        provided = authorization.removeprefix("Bearer ").strip()
-    if not expected or not provided or not compare_digest(provided, expected):
+        provided_values.append(authorization.removeprefix("Bearer ").strip())
+    if not expected or not provided_values or not all(compare_digest(value, expected) for value in provided_values):
         raise HTTPException(status_code=401, detail="Invalid worker secret.")
 
 

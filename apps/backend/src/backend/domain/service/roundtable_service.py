@@ -13,7 +13,8 @@ from llm.roundtable import (
     recommend_personas,
     select_personas,
 )
-from llm.roundtable.schema import DecisionArtifact, RoundtableMessage, SelectedPersona
+from llm.roundtable.schema import DecisionArtifact, SelectedPersona
+from llm.roundtable.schema import RoundtableMessage as LlmRoundtableMessage
 from llm.roundtable.schema import RoundtablePersona as LlmPersona
 
 from backend.domain.schema.roundtable_schema import (
@@ -52,10 +53,12 @@ if TYPE_CHECKING:
 
     from backend.domain.model.roundtable import (
         RoundtableArtifact,
-        RoundtableMessage,
         RoundtablePersonaModel,
         RoundtableSession,
         RoundtableSessionPersona,
+    )
+    from backend.domain.model.roundtable import (
+        RoundtableMessage as RoundtableMessageModel,
     )
     from backend.domain.repository.roundtable_repository import RoundtableRepository
 
@@ -243,7 +246,7 @@ class RoundtableService:
         await self._repository.update_status(session, session_id, "streaming")
         selected = _selected_from_snapshot(snapshot, language)
         try:
-            messages = cast("list[RoundtableMessage]", snapshot["messages"])
+            messages = cast("list[RoundtableMessageModel]", snapshot["messages"])
             sequence = max((message.sequence for message in messages), default=0)
             async for event in self._orchestrator.stream(session_model.decision_prompt, selected, language):
                 if event.text:
@@ -281,12 +284,12 @@ class RoundtableService:
     ) -> AsyncIterator[str]:
         snapshot = await self._repository.snapshot(session, session_id)
         selected = _selected_from_snapshot(snapshot, language)
-        messages = cast("list[RoundtableMessage]", snapshot["messages"])
+        messages = cast("list[RoundtableMessageModel]", snapshot["messages"])
         transcript = [message.content for message in messages]
         artifact_row = cast("RoundtableArtifact | None", snapshot["artifact"])
         artifact = _artifact_from_row(artifact_row) if artifact_row else None
         sequence = max((message.sequence for message in messages), default=0)
-        row: RoundtableMessage | None = None
+        row: RoundtableMessageModel | None = None
         async for event in self._orchestrator.stream_follow_up(question, selected, transcript, artifact, language):
             if event.text:
                 yield event.text
@@ -368,15 +371,17 @@ def _worker_persona_schema(persona: LlmPersona, language: RoundtableLanguage = "
 
 def _worker_selected_to_llm(persona: WorkerPersona) -> SelectedPersona:
     metadata = persona.metadata or {}
+    prompt = metadata.get("prompt")
+    source_url = metadata.get("sourceUrl")
     return SelectedPersona(
         persona=LlmPersona(
             id=persona.id,
             skill_name=persona.title,
             display_name=persona.name,
             summary=persona.description,
-            prompt=str(metadata.get("prompt", persona.description)),
+            prompt=str(prompt) if prompt is not None else persona.description,
             perspective_tags=tuple(persona.expertise),
-            source_url=cast("str | None", metadata.get("sourceUrl")),
+            source_url=source_url if isinstance(source_url, str) else None,
             selection_reason=getattr(persona, "selection_reason", None),
         ),
         selection_source=getattr(persona, "selection_source", "manual"),
@@ -407,7 +412,7 @@ def _worker_message_completed_event(
     request_id: str,
     session_id: str,
     sequence: int,
-    message: RoundtableMessage,
+    message: LlmRoundtableMessage,
 ) -> WorkerMessageCompletedEvent:
     return WorkerMessageCompletedEvent(
         request_id=request_id,
@@ -435,13 +440,15 @@ def _worker_error_event(request_id: str, session_id: str, exc: Exception) -> Wor
 
 
 def _persona_from_row(row: RoundtablePersonaModel) -> LlmPersona:
+    raw_perspective_tags = row.metadata_json.get("perspective_tags", ())
+    perspective_tags = raw_perspective_tags if isinstance(raw_perspective_tags, list | tuple) else ()
     return LlmPersona(
         id=row.id,
         skill_name=row.skill_name,
         display_name=row.display_name,
         summary=row.summary,
         prompt=str(row.prompt_json.get("system", row.summary)),
-        perspective_tags=tuple(row.metadata_json.get("perspective_tags", ())),
+        perspective_tags=tuple(str(tag) for tag in perspective_tags if isinstance(tag, str)),
         source_url=row.source_url,
     )
 
@@ -463,7 +470,7 @@ def _selected_from_snapshot(snapshot: dict[str, object], language: RoundtableLan
     return results
 
 
-def _message_schema(row: RoundtableMessage, persona_name_by_id: dict[str, str]) -> RoundtableMessageSchema:
+def _message_schema(row: RoundtableMessageModel, persona_name_by_id: dict[str, str]) -> RoundtableMessageSchema:
     return RoundtableMessageSchema(
         id=row.id,
         role=cast("RoundtableMessageRole", row.role),
@@ -498,7 +505,7 @@ def _session_schema(snapshot: dict[str, object]) -> RoundtableSessionSchema:
     session = cast("RoundtableSession", snapshot["session"])
     selected_rows = cast("list[RoundtableSessionPersona]", snapshot["selected"])
     personas = cast("dict[str, RoundtablePersonaModel]", snapshot["personas"])
-    messages = cast("list[RoundtableMessage]", snapshot["messages"])
+    messages = cast("list[RoundtableMessageModel]", snapshot["messages"])
     artifact = cast("RoundtableArtifact | None", snapshot["artifact"])
     selected = [
         SelectedPersonaSchema(
