@@ -6,6 +6,76 @@ title: "本地开发与体验"
 
 本文说明如何在本地启动 Bedrock，并体验圆桌对话决策参谋。
 
+## Circle Roundtable 最短启动方式
+
+现在对外演示的主入口是 Open SaaS 版本：
+
+```text
+http://localhost:3000/
+```
+
+本地完整体验需要 3 个进程：Postgres、Roundtable worker、Wasp app。
+
+### 1. 启动数据库
+
+先确保 Docker Desktop 已打开，然后在仓库根目录执行：
+
+```bash
+docker start opensaas-dev-db || docker run --name opensaas-dev-db \
+  -e POSTGRES_USER=opensaas \
+  -e POSTGRES_PASSWORD=opensaas \
+  -e POSTGRES_DB=opensaas \
+  -p 55432:5432 \
+  -d postgres:16-alpine
+```
+
+这个数据库对应 `apps/open-saas/app/.env.server` 里的：
+
+```text
+DATABASE_URL=postgresql://opensaas:opensaas@localhost:55432/opensaas
+```
+
+### 2. 启动 Roundtable worker
+
+另开一个终端：
+
+```bash
+cd apps/backend
+export AI_WORKER_SHARED_SECRET="$(grep '^AI_WORKER_SHARED_SECRET=' ../open-saas/app/.env.server | cut -d= -f2-)"
+uv run --package bedrock-backend uvicorn backend.main:app --reload --host 0.0.0.0 --port 8001
+```
+
+Wasp 会通过 `AI_WORKER_URL=http://localhost:8001` 调用这个 worker。没有真实 LLM key 时，圆桌会走本地 deterministic fallback，也能完成演示。
+
+### 3. 启动网站
+
+再另开一个终端：
+
+```bash
+cd apps/open-saas/app
+wasp start
+```
+
+启动成功后打开：
+
+```text
+http://localhost:3000/
+```
+
+常用页面：
+
+```text
+http://localhost:3000/login
+http://localhost:3000/pricing
+http://localhost:3000/roundtable
+```
+
+第一次启动或改过 Prisma schema 后，可以在 `apps/open-saas/app` 里补跑：
+
+```bash
+wasp db migrate-dev
+```
+
 ## 流程图
 
 ```text
